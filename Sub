@@ -15,10 +15,27 @@
             "bittorrent"
           ],
           "outboundTag": "direct"
+        },
+        {
+          "type": "field",
+          "network": "tcp,udp",
+          "balancerTag": "auto-locate"
         }
       ],
       "domainMatcher": "hybrid",
-      "domainStrategy": "IPIfNonMatch"
+      "domainStrategy": "IPIfNonMatch",
+      "balancers": [
+        {
+          "tag": "auto-locate",
+          "selector": [
+            "auto-1",
+            "auto-2"
+          ],
+          "strategy": {
+            "type": "leastPing"
+          }
+        }
+      ]
     },
     "inbounds": [
       {
@@ -61,16 +78,16 @@
     ],
     "outbounds": [
       {
-        "tag": "proxy",
+        "tag": "auto-1",
         "protocol": "vless",
         "settings": {
           "vnext": [
             {
-              "address": "w.upgrade101.club",
+              "address": "ruletka.world",
               "port": 443,
               "users": [
                 {
-                  "id": "f1c4978f-fcc0-42e2-b3c7-11d5e8aa50e7",
+                  "id": "d2b9f388-9d85-47c0-9263-1bf037c8efc1",
                   "encryption": "none",
                   "flow": ""
                 }
@@ -81,20 +98,53 @@
         "streamSettings": {
           "network": "ws",
           "wsSettings": {
-            "path": "/ws-f28c040ba3857b276cc22135",
+            "path": "/ws-f28c040ba3857b276cc22135?ed=2048",
             "headers": {
-              "Host": "w.upgrade101.club"
+              "Host": "ruletka.world"
             }
           },
           "security": "tls",
           "tlsSettings": {
-            "serverName": "w.upgrade101.club",
+            "serverName": "ruletka.world",
             "allowInsecure": false,
             "show": false,
             "fingerprint": "firefox",
             "alpn": [
               "http/1.1"
             ]
+          }
+        }
+      },
+      {
+        "tag": "auto-2",
+        "protocol": "vless",
+        "settings": {
+          "vnext": [
+            {
+              "address": "uhtaru.instrumentidlyadoma.com",
+              "port": 443,
+              "users": [
+                {
+                  "id": "53b4f33c-ae1d-00de-be3d-fbb7adb4bfcf",
+                  "encryption": "none",
+                  "flow": ""
+                }
+              ]
+            }
+          ]
+        },
+        "streamSettings": {
+          "network": "grpc",
+          "grpcSettings": {
+            "serviceName": "uhtaru.instrumentidlyadoma.com",
+            "authority": "",
+            "mode": false
+          },
+          "security": "reality",
+          "realitySettings": {
+            "serverName": "uhtaru.instrumentidlyadoma.com",
+            "publicKey": "sOx7AkBNtLuAdWCzqYPxjOErfqI5CeDzbJleGJqp8WU",
+            "fingerprint": "firefox"
           }
         }
       },
@@ -145,8 +195,17 @@
         "protocol": "blackhole"
       }
     ],
-    "remarks": "🇪🇺Белые Списки | Европа",
-    "meta": {}
+    "remarks": "🇪🇺Белые Списки | Auto Locate",
+    "meta": {},
+    "observatory": {
+      "subjectSelector": [
+        "auto-1",
+        "auto-2"
+      ],
+      "probeUrl": "https://www.google.com/generate_204",
+      "probeInterval": "10s",
+      "enableConcurrency": true
+    }
   },
   {
     "dns": {
@@ -3817,8 +3876,198 @@
         "proxy"
       ]
     },
-    "remarks": "🇳🇱Белые Списки | Нидерланды",
+    "remarks": "🇳🇱Белые Списки | Нидерланды #1",
     "meta": {}
+  },
+  {
+    "dns": {
+      "hosts": {
+        "dot.pub": [
+          "1.12.12.12",
+          "120.53.53.53"
+        ],
+        "dns.google": [
+          "8.8.8.8",
+          "8.8.4.4",
+          "2001:4860:4860::8888",
+          "2001:4860:4860::8844"
+        ],
+        "dns.quad9.net": [
+          "9.9.9.9",
+          "149.112.112.112",
+          "2620:fe::fe",
+          "2620:fe::9"
+        ],
+        "dns.alidns.com": [
+          "223.5.5.5",
+          "223.6.6.6",
+          "2400:3200::1",
+          "2400:3200:baba::1"
+        ],
+        "one.one.one.one": [
+          "1.1.1.1",
+          "1.0.0.1",
+          "2606:4700:4700::1111",
+          "2606:4700:4700::1001"
+        ],
+        "cloudflare-dns.com": [
+          "104.16.248.249",
+          "104.16.249.249",
+          "2606:4700::6810:f8f9",
+          "2606:4700::6810:f9f9"
+        ],
+        "dns.cloudflare.com": [
+          "104.16.132.229",
+          "104.16.133.229",
+          "2606:4700::6810:84e5",
+          "2606:4700::6810:85e5"
+        ],
+        "domain:googleapis.cn": "googleapis.com",
+        "common.dot.dns.yandex.net": [
+          "77.88.8.8",
+          "77.88.8.1",
+          "2a02:6b8::feed:0ff",
+          "2a02:6b8:0:1::feed:0ff"
+        ]
+      },
+      "servers": [
+        "8.8.8.8"
+      ]
+    },
+    "log": {
+      "loglevel": "warning"
+    },
+    "stats": {},
+    "policy": {
+      "system": {
+        "statsOutboundUplink": true,
+        "statsOutboundDownlink": true
+      }
+    },
+    "routing": {
+      "rules": [
+        {
+          "type": "field",
+          "network": "tcp,udp",
+          "outboundTag": "external-proxy"
+        }
+      ],
+      "domainStrategy": "IPIfNonMatch"
+    },
+    "inbounds": [
+      {
+        "tag": "socks",
+        "port": 10808,
+        "listen": "127.0.0.1",
+        "protocol": "socks",
+        "settings": {
+          "udp": true,
+          "auth": "noauth",
+          "userLevel": 8
+        },
+        "sniffing": {
+          "enabled": true,
+          "destOverride": [
+            "http",
+            "tls",
+            "fakedns"
+          ]
+        }
+      },
+      {
+        "tag": "http",
+        "port": 10809,
+        "listen": "127.0.0.1",
+        "protocol": "http",
+        "settings": {
+          "userLevel": 8
+        }
+      }
+    ],
+    "outbounds": [
+      {
+        "tag": "proxy",
+        "protocol": "vless",
+        "settings": {
+          "vnext": [
+            {
+              "address": "lte-nl.cdn-assets-pro.com",
+              "port": 443,
+              "users": [
+                {
+                  "id": "e456a73c-1a51-4a74-a3f1-d969fb05cc53",
+                  "encryption": "none",
+                  "flow": "xtls-rprx-vision"
+                }
+              ]
+            }
+          ]
+        },
+        "streamSettings": {
+          "network": "tcp",
+          "tcpSettings": {},
+          "security": "reality",
+          "realitySettings": {
+            "serverName": "127.0.0.1",
+            "publicKey": "juPRHtbKH3Nli5MuyRaHIhJcQoCVfyqUQ3FjrzORqg0",
+            "shortId": "19fba773931ec03f",
+            "fingerprint": "firefox"
+          }
+        }
+      },
+      {
+        "mux": {
+          "enabled": false,
+          "concurrency": -1
+        },
+        "tag": "external-proxy",
+        "protocol": "vless",
+        "settings": {
+          "vnext": [
+            {
+              "port": 443,
+              "users": [
+                {
+                  "id": "8aa567ab-2f03-498f-bab3-e69862451488",
+                  "flow": "",
+                  "level": 8,
+                  "encryption": "none"
+                }
+              ],
+              "address": "lte-nl.cdn-assets-pro.com"
+            }
+          ]
+        },
+        "streamSettings": {
+          "network": "grpc",
+          "security": "reality",
+          "grpcSettings": {
+            "mode": "gun",
+            "authority": "id.pervye.ru",
+            "multiMode": false,
+            "serviceName": "ns",
+            "idle_timeout": 60,
+            "health_check_timeout": 20
+          },
+          "realitySettings": {
+            "show": false,
+            "shortId": "e42075de64c24511",
+            "publicKey": "N6RiU4XHQl31HeKmBNOFDypgfDqqshGa7zxfqe72hjk",
+            "serverName": "cdn.byteark.com",
+            "fingerprint": "firefox"
+          }
+        }
+      },
+      {
+        "tag": "direct",
+        "protocol": "freedom"
+      },
+      {
+        "tag": "block",
+        "protocol": "blackhole"
+      }
+    ],
+    "remarks": "🇳🇱Белые Списки | Нидерланды #2"
   },
   {
     "dns": {
