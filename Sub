@@ -8974,5 +8974,354 @@
       ]
     },
     "remarks": "🇺🇸Белые Списки | США"
+  },
+  {
+    "api": {
+      "listen": "[::1]:10085",
+      "services": [
+        "StatsService"
+      ],
+      "tag": "api"
+    },
+    "dns": {
+      "hosts": {
+        "domain:googleapis.cn": "googleapis.com"
+      },
+      "queryStrategy": "UseIPv4",
+      "servers": [
+        "1.1.1.1",
+        {
+          "address": "1.1.1.1",
+          "domains": [],
+          "port": 53
+        },
+        {
+          "address": "8.8.8.8",
+          "domains": [],
+          "port": 53
+        }
+      ]
+    },
+    "inbounds": [
+      {
+        "listen": "127.0.0.1",
+        "port": 10808,
+        "protocol": "socks",
+        "settings": {
+          "auth": "noauth",
+          "udp": true,
+          "userLevel": 8
+        },
+        "sniffing": {
+          "destOverride": [
+            "http",
+            "tls",
+            "quic"
+          ],
+          "enabled": true
+        },
+        "tag": "socks"
+      }
+    ],
+    "log": {
+      "access": "/storage/emulated/0/Android/data/com.happproxy/files/assets/logs/access/access_log.txt",
+      "dnsLog": true,
+      "error": "/storage/emulated/0/Android/data/com.happproxy/files/assets/logs/error/1789529914791_error_log.txt",
+      "loglevel": "debug"
+    },
+    "outbounds": [
+      {
+        "mux": {
+          "concurrency": -1,
+          "enabled": false,
+          "xudpConcurrency": 8,
+          "xudpProxyUDP443": ""
+        },
+        "protocol": "vless",
+        "settings": {
+          "vnext": [
+            {
+              "address": "81.163.22.249",
+              "port": 443,
+              "users": [
+                {
+                  "encryption": "none",
+                  "flow": "xtls-rprx-vision",
+                  "id": "56b4f01a-4ffe-4a0a-bfc6-3f37ee2e2871",
+                  "level": 8,
+                  "security": "auto"
+                }
+              ]
+            }
+          ]
+        },
+        "streamSettings": {
+          "finalmask": {
+            "tcp": [
+              {
+                "settings": {
+                  "delay": "10-20",
+                  "length": "50-100",
+                  "packets": "tlshello",
+                  "maxSplit": "100-200"
+                },
+                "type": "fragment"
+              }
+            ]
+          },
+          "network": "tcp",
+          "realitySettings": {
+            "fingerprint": "firefox",
+            "publicKey": "cbzeihdN9Qm-YZp2_kSgv6eDa_HeYWO-JMUIaCjYiQs",
+            "serverName": "timeweb.com",
+            "shortId": "7c83683ed7507a69",
+            "show": false
+          },
+          "security": "reality",
+          "tcpSettings": {
+            "header": {
+              "type": "none"
+            }
+          }
+        },
+        "tag": "proxy"
+      },
+      {
+        "protocol": "freedom",
+        "tag": "direct"
+      },
+      {
+        "protocol": "blackhole",
+        "tag": "block"
+      }
+    ],
+    "policy": {
+      "levels": {
+        "8": {
+          "connIdle": 300,
+          "downlinkOnly": 1,
+          "handshake": 4,
+          "uplinkOnly": 1
+        }
+      },
+      "system": {
+        "statsOutboundUplink": true,
+        "statsOutboundDownlink": true
+      }
+    },
+    "remarks": "Белые Списки | Резерв 1",
+    "routing": {
+      "domainStrategy": "IPIfNonMatch",
+      "rules": [
+        {
+          "ip": [
+            "1.1.1.1"
+          ],
+          "outboundTag": "proxy",
+          "port": "53"
+        },
+        {
+          "ip": [
+            "8.8.8.8"
+          ],
+          "outboundTag": "direct",
+          "port": "53"
+        },
+        {
+          "ip": [
+            "10.0.0.0/8",
+            "172.16.0.0/12",
+            "192.168.0.0/16",
+            "169.254.0.0/16",
+            "224.0.0.0/4",
+            "255.255.255.255"
+          ],
+          "outboundTag": "direct"
+        }
+      ]
+    },
+    "stats": {}
+  },
+  {
+    "api": {
+      "listen": "[::1]:10085",
+      "services": [
+        "StatsService"
+      ],
+      "tag": "api"
+    },
+    "dns": {
+      "hosts": {
+        "domain:googleapis.cn": "googleapis.com"
+      },
+      "queryStrategy": "UseIPv4",
+      "servers": [
+        "1.1.1.1",
+        {
+          "address": "1.1.1.1",
+          "domains": [],
+          "port": 53
+        },
+        {
+          "address": "8.8.8.8",
+          "domains": [],
+          "port": 53
+        }
+      ]
+    },
+    "inbounds": [
+      {
+        "listen": "127.0.0.1",
+        "port": 10808,
+        "protocol": "socks",
+        "settings": {
+          "auth": "noauth",
+          "udp": true,
+          "userLevel": 8
+        },
+        "sniffing": {
+          "destOverride": [
+            "http",
+            "tls",
+            "quic"
+          ],
+          "enabled": true
+        },
+        "tag": "socks"
+      }
+    ],
+    "log": {
+      "access": "/storage/emulated/0/Android/data/com.happproxy/files/assets/logs/access/access_log.txt",
+      "dnsLog": true,
+      "error": "/storage/emulated/0/Android/data/com.happproxy/files/assets/logs/error/1789530004505_error_log.txt",
+      "loglevel": "debug"
+    },
+    "outbounds": [
+      {
+        "mux": {
+          "concurrency": -1,
+          "enabled": false,
+          "xudpConcurrency": 8,
+          "xudpProxyUDP443": ""
+        },
+        "protocol": "vless",
+        "settings": {
+          "vnext": [
+            {
+              "address": "188.72.103.3",
+              "port": 443,
+              "users": [
+                {
+                  "encryption": "none",
+                  "flow": "",
+                  "id": "56b4f01a-4ffe-4a0a-bfc6-3f37ee2e2871",
+                  "level": 8,
+                  "security": "auto"
+                }
+              ]
+            }
+          ]
+        },
+        "streamSettings": {
+          "finalmask": {
+            "tcp": [
+              {
+                "settings": {
+                  "delay": "10-20",
+                  "length": "50-100",
+                  "packets": "tlshello",
+                  "maxSplit": "100-200"
+                },
+                "type": "fragment"
+              }
+            ]
+          },
+          "network": "xhttp",
+          "security": "tls",
+          "tlsSettings": {
+            "alpn": [
+              "h2",
+              "http/1.1"
+            ],
+            "fingerprint": "edge",
+            "serverName": "cdnf2.antiviruses.cc",
+            "show": false
+          },
+          "xhttpSettings": {
+            "extra": {
+              "xmux": {
+                "cMaxLifetimeMs": 300000,
+                "cMaxReuseTimes": 100,
+                "maxConcurrency": "16-32",
+                "maxConnections": 0,
+                "hKeepAlivePeriod": 30
+              },
+              "uplinkHTTPMethod": "GET"
+            },
+            "host": "cdnf2.antiviruses.cc",
+            "mode": "packet-up",
+            "path": "/api/uploadFile/",
+            "scMaxConcurrentPosts": "10",
+            "scMaxEachPostBytes": "1000000",
+            "scMinPostsIntervalMs": "30"
+          }
+        },
+        "tag": "proxy"
+      },
+      {
+        "protocol": "freedom",
+        "tag": "direct"
+      },
+      {
+        "protocol": "blackhole",
+        "tag": "block"
+      }
+    ],
+    "policy": {
+      "levels": {
+        "8": {
+          "connIdle": 300,
+          "downlinkOnly": 1,
+          "handshake": 4,
+          "uplinkOnly": 1
+        }
+      },
+      "system": {
+        "statsOutboundUplink": true,
+        "statsOutboundDownlink": true
+      }
+    },
+    "remarks": "Белые Списки | Резерв 2",
+    "routing": {
+      "domainStrategy": "IPIfNonMatch",
+      "rules": [
+        {
+          "ip": [
+            "1.1.1.1"
+          ],
+          "outboundTag": "proxy",
+          "port": "53"
+        },
+        {
+          "ip": [
+            "8.8.8.8"
+          ],
+          "outboundTag": "direct",
+          "port": "53"
+        },
+        {
+          "ip": [
+            "10.0.0.0/8",
+            "172.16.0.0/12",
+            "192.168.0.0/16",
+            "169.254.0.0/16",
+            "224.0.0.0/4",
+            "255.255.255.255"
+          ],
+          "outboundTag": "direct"
+        }
+      ]
+    },
+    "stats": {}
   }
 ]
