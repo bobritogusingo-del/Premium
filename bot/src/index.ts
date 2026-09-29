@@ -1094,8 +1094,17 @@ async function handleCallback(env: Env, callback: TelegramCallbackQuery): Promis
   }
   if (data.startsWith("happ:device:remove:")) {
     if (!(await ensureMembership(env, chatId, callback.from.id))) return;
+    const token = data.slice("happ:device:remove:".length);
+    await sendMessage(env, chatId, "Вы уверены?", { inline_keyboard: [[
+      { text: "Да", callback_data: `happ:device:confirm:${token}` },
+      { text: "Нет", callback_data: "happ:cancel" },
+    ]] });
+    return;
+  }
+  if (data.startsWith("happ:device:confirm:")) {
+    if (!(await ensureMembership(env, chatId, callback.from.id))) return;
     try {
-      const removed = await removeHappDevice(env, callback.from.id, data.slice("happ:device:remove:".length));
+      const removed = await removeHappDevice(env, callback.from.id, data.slice("happ:device:confirm:".length));
       if (!removed) {
         await sendMessage(env, chatId, "Эта кнопка устарела. Откройте «📱 Устройства» ещё раз.");
         return;
@@ -1110,6 +1119,14 @@ async function handleCallback(env: Env, callback: TelegramCallbackQuery): Promis
   }
   if (data === "happ:reissue") {
     if (!(await ensureMembership(env, chatId, callback.from.id))) return;
+    await sendMessage(env, chatId, "Вы уверены?", { inline_keyboard: [[
+      { text: "Да", callback_data: "happ:reissue:confirm" },
+      { text: "Нет", callback_data: "happ:cancel" },
+    ]] });
+    return;
+  }
+  if (data === "happ:reissue:confirm") {
+    if (!(await ensureMembership(env, chatId, callback.from.id))) return;
     try {
       await reissueHappSubscription(env, callback.from.id, "premium");
       await sendSubscriptionChoice(env, chatId, "Ссылка перевыпущена. Старая ссылка больше не работает.");
@@ -1117,6 +1134,10 @@ async function handleCallback(env: Env, callback: TelegramCallbackQuery): Promis
       console.error(`Could not reissue Happ subscription for ${callback.from.id}`, error);
       await sendMessage(env, chatId, "Не удалось перевыпустить ссылку. Попробуйте через минуту.");
     }
+    return;
+  }
+  if (data === "happ:cancel") {
+    await sendMessage(env, chatId, "Отменено.");
     return;
   }
   if (data === "happ:android" || data === "happ:ios") {

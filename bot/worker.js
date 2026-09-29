@@ -1790,8 +1790,17 @@ async function handleCallback(env, callback) {
   }
   if (data.startsWith("happ:device:remove:")) {
     if (!await ensureMembership(env, chatId, callback.from.id)) return;
+    const token = data.slice("happ:device:remove:".length);
+    await sendMessage(env, chatId, "\u0412\u044B \u0443\u0432\u0435\u0440\u0435\u043D\u044B?", { inline_keyboard: [[
+      { text: "\u0414\u0430", callback_data: `happ:device:confirm:${token}` },
+      { text: "\u041D\u0435\u0442", callback_data: "happ:cancel" }
+    ]] });
+    return;
+  }
+  if (data.startsWith("happ:device:confirm:")) {
+    if (!await ensureMembership(env, chatId, callback.from.id)) return;
     try {
-      const removed = await removeHappDevice(env, callback.from.id, data.slice("happ:device:remove:".length));
+      const removed = await removeHappDevice(env, callback.from.id, data.slice("happ:device:confirm:".length));
       if (!removed) {
         await sendMessage(env, chatId, "\u042D\u0442\u0430 \u043A\u043D\u043E\u043F\u043A\u0430 \u0443\u0441\u0442\u0430\u0440\u0435\u043B\u0430. \u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \xAB\u{1F4F1} \u0423\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0430\xBB \u0435\u0449\u0451 \u0440\u0430\u0437.");
         return;
@@ -1806,6 +1815,14 @@ async function handleCallback(env, callback) {
   }
   if (data === "happ:reissue") {
     if (!await ensureMembership(env, chatId, callback.from.id)) return;
+    await sendMessage(env, chatId, "\u0412\u044B \u0443\u0432\u0435\u0440\u0435\u043D\u044B?", { inline_keyboard: [[
+      { text: "\u0414\u0430", callback_data: "happ:reissue:confirm" },
+      { text: "\u041D\u0435\u0442", callback_data: "happ:cancel" }
+    ]] });
+    return;
+  }
+  if (data === "happ:reissue:confirm") {
+    if (!await ensureMembership(env, chatId, callback.from.id)) return;
     try {
       await reissueHappSubscription(env, callback.from.id, "premium");
       await sendSubscriptionChoice(env, chatId, "\u0421\u0441\u044B\u043B\u043A\u0430 \u043F\u0435\u0440\u0435\u0432\u044B\u043F\u0443\u0449\u0435\u043D\u0430. \u0421\u0442\u0430\u0440\u0430\u044F \u0441\u0441\u044B\u043B\u043A\u0430 \u0431\u043E\u043B\u044C\u0448\u0435 \u043D\u0435 \u0440\u0430\u0431\u043E\u0442\u0430\u0435\u0442.");
@@ -1813,6 +1830,10 @@ async function handleCallback(env, callback) {
       console.error(`Could not reissue Happ subscription for ${callback.from.id}`, error);
       await sendMessage(env, chatId, "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0435\u0440\u0435\u0432\u044B\u043F\u0443\u0441\u0442\u0438\u0442\u044C \u0441\u0441\u044B\u043B\u043A\u0443. \u041F\u043E\u043F\u0440\u043E\u0431\u0443\u0439\u0442\u0435 \u0447\u0435\u0440\u0435\u0437 \u043C\u0438\u043D\u0443\u0442\u0443.");
     }
+    return;
+  }
+  if (data === "happ:cancel") {
+    await sendMessage(env, chatId, "\u041E\u0442\u043C\u0435\u043D\u0435\u043D\u043E.");
     return;
   }
   if (data === "happ:android" || data === "happ:ios") {
