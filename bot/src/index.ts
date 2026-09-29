@@ -799,6 +799,7 @@ async function sendPromoInfo(env: Env, chatId: number, code: string, category: "
     getPromoPurchasers(env, promo.code),
   ]);
   const entered = await formatPromoPeople(env, enteredUsers, "Пока никто не вводил код.");
+  const enteredQuote = enteredUsers.length ? `<blockquote expandable>${entered}</blockquote>` : entered;
   const paidUserQuotes = formatPaidPromoUsersQuotes(purchasers);
   const back = `admin:promo:list:${category}:0`;
   const keyboard = current
@@ -807,7 +808,7 @@ async function sendPromoInfo(env: Env, chatId: number, code: string, category: "
   await telegramApi(env, "sendMessage", {
     chat_id: chatId,
     parse_mode: "HTML",
-    text: `Промокод: <code>${escapeHtml(promo.code)}</code>\n\nСтатус: ${status}\nУсловия: ${escapeHtml(promoKind(promo))}\nАктивации: ${promo.activation_count} из ${formatPromoLimit(promo)}\nОплаченные покупки: ${promo.paid_orders}\nДействует до: ${formatPromoExpiry(promo.expires_at)}\nСоздан: ${formatPromoExpiry(promo.created_at)}\n\n<b>Кто ввёл промокод:</b>\n${entered}\n\n<b>Кто купил или получил дни:</b>\n${paidUserQuotes[0]}`, 
+    text: `Промокод: <code>${escapeHtml(promo.code)}</code>\n\nСтатус: ${status}\nУсловия: ${escapeHtml(promoKind(promo))}\nАктивации: ${promo.activation_count} из ${formatPromoLimit(promo)}\nОплаченные покупки: ${promo.paid_orders}\nДействует до: ${formatPromoExpiry(promo.expires_at)}\nСоздан: ${formatPromoExpiry(promo.created_at)}\n\n<b>Кто ввёл промокод:</b>\n${enteredQuote}\n\n<b>Кто купил или получил дни:</b>\n${paidUserQuotes[0]}`, 
     reply_markup: keyboard,
   });
   for (let index = 1; index < paidUserQuotes.length; index += 1) {

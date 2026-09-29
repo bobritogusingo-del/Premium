@@ -1478,6 +1478,7 @@ async function sendPromoInfo(env, chatId, code, category = "current") {
     getPromoPurchasers(env, promo.code)
   ]);
   const entered = await formatPromoPeople(env, enteredUsers, "\u041F\u043E\u043A\u0430 \u043D\u0438\u043A\u0442\u043E \u043D\u0435 \u0432\u0432\u043E\u0434\u0438\u043B \u043A\u043E\u0434.");
+  const enteredQuote = enteredUsers.length ? `<blockquote expandable>${entered}</blockquote>` : entered;
   const paidUserQuotes = formatPaidPromoUsersQuotes(purchasers);
   const back = `admin:promo:list:${category}:0`;
   const keyboard = current ? { inline_keyboard: [[{ text: "\u{1F5D1} \u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043F\u0440\u043E\u043C\u043E\u043A\u043E\u0434", callback_data: `admin:promo:delete:${promo.code}` }], [{ text: "\u{1F4CB} \u041A \u0441\u043F\u0438\u0441\u043A\u0443", callback_data: back }]] } : { inline_keyboard: [[{ text: "\u{1F4CB} \u041A \u0441\u043F\u0438\u0441\u043A\u0443", callback_data: back }]] };
@@ -1494,7 +1495,7 @@ async function sendPromoInfo(env, chatId, code, category = "current") {
 \u0421\u043E\u0437\u0434\u0430\u043D: ${formatPromoExpiry(promo.created_at)}
 
 <b>\u041A\u0442\u043E \u0432\u0432\u0451\u043B \u043F\u0440\u043E\u043C\u043E\u043A\u043E\u0434:</b>
-${entered}
+${enteredQuote}
 
 <b>\u041A\u0442\u043E \u043A\u0443\u043F\u0438\u043B \u0438\u043B\u0438 \u043F\u043E\u043B\u0443\u0447\u0438\u043B \u0434\u043D\u0438:</b>
 ${paidUserQuotes[0]}`,
