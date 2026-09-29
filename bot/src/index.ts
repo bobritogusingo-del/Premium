@@ -736,7 +736,7 @@ async function getPromoPurchasers(env: Env, code: string): Promise<PromoUserRow[
       UNION ALL
       SELECT a.user_id, u.username, u.first_name, a.created_at AS used_at, 'получил бесплатные дни' AS usage_type
       FROM activation_logs a JOIN users u ON u.telegram_id = a.user_id WHERE a.details LIKE ?
-    ) ORDER BY used_at DESC LIMIT 20`).bind(code, `Free promo ${code}:%`).all<PromoUserRow>();
+    ) ORDER BY used_at DESC LIMIT 1000`).bind(code, `Free promo ${code}:%`).all<PromoUserRow>();
   return result.results;
 }
 async function formatPromoPeople(env: Env, users: PromoUserRow[], emptyText: string): Promise<string> {
@@ -756,6 +756,25 @@ async function formatPromoPeople(env: Env, users: PromoUserRow[], emptyText: str
   }
   return lines.join("\n");
 }
+function formatPaidPromoUsersQuotes(users: PromoUserRow[]): string[] {
+  if (!users.length) return ["Пока нет успешных покупок или выдач."];
+  // Telegram accepts at most 4096 characters per message. Split only when a
+  // very large promo exceeds that; every part remains a collapsed quote.
+  const chunks: string[] = [];
+  let lines: string[] = [];
+  let length = 0;
+  for (const user of users) {
+    const account = user.username ? `@${escapeHtml(user.username)}` : (user.first_name ? escapeHtml(user.first_name) : "без имени");
+    const line = `• ${account} · <code>${user.user_id}</code> — ${user.usage_type}`;
+    if (lines.length && length + line.length + 1 > 3000) {
+      chunks.push(`<blockquote expandable>${lines.join("\n")}</blockquote>`);
+      lines = []; length = 0;
+    }
+    lines.push(line); length += line.length + 1;
+  }
+  if (lines.length) chunks.push(`<blockquote expandable>${lines.join("\n")}</blockquote>`);
+  return chunks;
+}
 async function sendPromoInfo(env: Env, chatId: number, code: string, category: "current" | "expired" = "current"): Promise<void> {
   const promo = await env.DB.prepare(`SELECT p.code, p.discount_percent, p.duration_days, p.max_activations, p.activation_count,
       p.active, p.free_grant, p.unlimited_activations, p.expires_at, p.created_at, p.updated_at,
@@ -769,7 +788,7 @@ async function sendPromoInfo(env: Env, chatId: number, code: string, category: "
     getPromoPurchasers(env, promo.code),
   ]);
   const entered = await formatPromoPeople(env, enteredUsers, "Пока никто не вводил код.");
-  const bought = await formatPromoPeople(env, purchasers, "Пока нет успешных покупок или выдач.");
+  const paidUserQuotes = formatPaidPromoUsersQuotes(purchasers);
   const back = `admin:promo:list:${category}:0`;
   const keyboard = current
     ? { inline_keyboard: [[{ text: "🗑 Удалить промокод", callback_data: `admin:promo:delete:${promo.code}` }], [{ text: "📋 К списку", callback_data: back }]] }
@@ -777,9 +796,16 @@ async function sendPromoInfo(env: Env, chatId: number, code: string, category: "
   await telegramApi(env, "sendMessage", {
     chat_id: chatId,
     parse_mode: "HTML",
-    text: `Промокод: <code>${escapeHtml(promo.code)}</code>\n\nСтатус: ${status}\nУсловия: ${escapeHtml(promoKind(promo))}\nАктивации: ${promo.activation_count} из ${formatPromoLimit(promo)}\nОплаченные покупки: ${promo.paid_orders}\nДействует до: ${formatPromoExpiry(promo.expires_at)}\nСоздан: ${formatPromoExpiry(promo.created_at)}\n\n<b>Кто ввёл промокод:</b>\n${entered}\n\n<b>Кто купил или получил дни:</b>\n${bought}`, 
+    text: `Промокод: <code>${escapeHtml(promo.code)}</code>\n\nСтатус: ${status}\nУсловия: ${escapeHtml(promoKind(promo))}\nАктивации: ${promo.activation_count} из ${formatPromoLimit(promo)}\nОплаченные покупки: ${promo.paid_orders}\nДействует до: ${formatPromoExpiry(promo.expires_at)}\nСоздан: ${formatPromoExpiry(promo.created_at)}\n\n<b>Кто ввёл промокод:</b>\n${entered}\n\n<b>Кто купил или получил дни:</b>\n${paidUserQuotes[0]}`, 
     reply_markup: keyboard,
   });
+  for (let index = 1; index < paidUserQuotes.length; index += 1) {
+    await telegramApi(env, "sendMessage", {
+      chat_id: chatId,
+      parse_mode: "HTML",
+      text: `<b>Кто купил или получил дни — продолжение:</b>\n${paidUserQuotes[index]}`,
+    });
+  }
 }
 async function takePromoReservation(env: Env, userId: number, code: string): Promise<boolean> {
   const result = await env.DB.prepare("DELETE FROM promo_reservations WHERE user_id = ? AND code = ?").bind(userId, code).run();

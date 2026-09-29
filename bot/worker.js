@@ -1412,7 +1412,7 @@ async function getPromoPurchasers(env, code) {
       UNION ALL
       SELECT a.user_id, u.username, u.first_name, a.created_at AS used_at, '\u043F\u043E\u043B\u0443\u0447\u0438\u043B \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u044B\u0435 \u0434\u043D\u0438' AS usage_type
       FROM activation_logs a JOIN users u ON u.telegram_id = a.user_id WHERE a.details LIKE ?
-    ) ORDER BY used_at DESC LIMIT 20`).bind(code, `Free promo ${code}:%`).all();
+    ) ORDER BY used_at DESC LIMIT 1000`).bind(code, `Free promo ${code}:%`).all();
   return result.results;
 }
 async function formatPromoPeople(env, users, emptyText) {
@@ -1436,6 +1436,25 @@ async function formatPromoPeople(env, users, emptyText) {
   }
   return lines.join("\n");
 }
+function formatPaidPromoUsersQuotes(users) {
+  if (!users.length) return ["\u041F\u043E\u043A\u0430 \u043D\u0435\u0442 \u0443\u0441\u043F\u0435\u0448\u043D\u044B\u0445 \u043F\u043E\u043A\u0443\u043F\u043E\u043A \u0438\u043B\u0438 \u0432\u044B\u0434\u0430\u0447."];
+  const chunks = [];
+  let lines = [];
+  let length = 0;
+  for (const user of users) {
+    const account = user.username ? `@${escapeHtml(user.username)}` : user.first_name ? escapeHtml(user.first_name) : "\u0431\u0435\u0437 \u0438\u043C\u0435\u043D\u0438";
+    const line = `\u2022 ${account} \xB7 <code>${user.user_id}</code> \u2014 ${user.usage_type}`;
+    if (lines.length && length + line.length + 1 > 3e3) {
+      chunks.push(`<blockquote expandable>${lines.join("\n")}</blockquote>`);
+      lines = [];
+      length = 0;
+    }
+    lines.push(line);
+    length += line.length + 1;
+  }
+  if (lines.length) chunks.push(`<blockquote expandable>${lines.join("\n")}</blockquote>`);
+  return chunks;
+}
 async function sendPromoInfo(env, chatId, code, category = "current") {
   const promo = await env.DB.prepare(`SELECT p.code, p.discount_percent, p.duration_days, p.max_activations, p.activation_count,
       p.active, p.free_grant, p.unlimited_activations, p.expires_at, p.created_at, p.updated_at,
@@ -1452,7 +1471,7 @@ async function sendPromoInfo(env, chatId, code, category = "current") {
     getPromoPurchasers(env, promo.code)
   ]);
   const entered = await formatPromoPeople(env, enteredUsers, "\u041F\u043E\u043A\u0430 \u043D\u0438\u043A\u0442\u043E \u043D\u0435 \u0432\u0432\u043E\u0434\u0438\u043B \u043A\u043E\u0434.");
-  const bought = await formatPromoPeople(env, purchasers, "\u041F\u043E\u043A\u0430 \u043D\u0435\u0442 \u0443\u0441\u043F\u0435\u0448\u043D\u044B\u0445 \u043F\u043E\u043A\u0443\u043F\u043E\u043A \u0438\u043B\u0438 \u0432\u044B\u0434\u0430\u0447.");
+  const paidUserQuotes = formatPaidPromoUsersQuotes(purchasers);
   const back = `admin:promo:list:${category}:0`;
   const keyboard = current ? { inline_keyboard: [[{ text: "\u{1F5D1} \u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043F\u0440\u043E\u043C\u043E\u043A\u043E\u0434", callback_data: `admin:promo:delete:${promo.code}` }], [{ text: "\u{1F4CB} \u041A \u0441\u043F\u0438\u0441\u043A\u0443", callback_data: back }]] } : { inline_keyboard: [[{ text: "\u{1F4CB} \u041A \u0441\u043F\u0438\u0441\u043A\u0443", callback_data: back }]] };
   await telegramApi(env, "sendMessage", {
@@ -1471,9 +1490,17 @@ async function sendPromoInfo(env, chatId, code, category = "current") {
 ${entered}
 
 <b>\u041A\u0442\u043E \u043A\u0443\u043F\u0438\u043B \u0438\u043B\u0438 \u043F\u043E\u043B\u0443\u0447\u0438\u043B \u0434\u043D\u0438:</b>
-${bought}`,
+${paidUserQuotes[0]}`,
     reply_markup: keyboard
   });
+  for (let index = 1; index < paidUserQuotes.length; index += 1) {
+    await telegramApi(env, "sendMessage", {
+      chat_id: chatId,
+      parse_mode: "HTML",
+      text: `<b>\u041A\u0442\u043E \u043A\u0443\u043F\u0438\u043B \u0438\u043B\u0438 \u043F\u043E\u043B\u0443\u0447\u0438\u043B \u0434\u043D\u0438 \u2014 \u043F\u0440\u043E\u0434\u043E\u043B\u0436\u0435\u043D\u0438\u0435:</b>
+${paidUserQuotes[index]}`
+    });
+  }
 }
 async function takePromoReservation(env, userId, code) {
   const result = await env.DB.prepare("DELETE FROM promo_reservations WHERE user_id = ? AND code = ?").bind(userId, code).run();
