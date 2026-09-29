@@ -648,20 +648,28 @@ async function getPromoCode(env: Env, code: string): Promise<PromoCodeRow | null
     .bind(code).first<PromoCodeRow>();
 }
 async function reservePromo(env: Env, userId: number, code: string): Promise<boolean> {
-  // One Telegram account may use a particular code once. promo_entries is
-  // permanent audit data, unlike a short-lived reservation for the checkout.
-  const existingReservation = await env.DB.prepare("SELECT 1 FROM promo_reservations WHERE user_id = ?").bind(userId).first();
-  if (existingReservation) return false;
+  // A typed code is not a redemption. A user may try again after abandoning a
+  // price selection or a payment, but may not receive the same code twice.
+  const existing = await env.DB.prepare("SELECT code FROM promo_reservations WHERE user_id = ?").bind(userId).first<{ code: string }>();
+  if (existing) {
+    // Reservations have no expiry in the legacy table. Release a previous
+    // unfinished attempt before evaluating the new one and return its slot.
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM promo_reservations WHERE user_id = ?").bind(userId),
+      env.DB.prepare("UPDATE promo_codes SET activation_count = MAX(0, activation_count - 1), updated_at = datetime('now') WHERE code = ?").bind(existing.code),
+    ]);
+  }
   const result = await env.DB.prepare(`UPDATE promo_codes SET activation_count = activation_count + 1, updated_at = datetime('now')
     WHERE code = ? AND active = 1 AND (expires_at IS NULL OR expires_at > datetime('now'))
       AND (unlimited_activations = 1 OR activation_count < max_activations)
-      AND NOT EXISTS (SELECT 1 FROM promo_entries WHERE promo_code = ? AND user_id = ?)`).bind(code, code, userId).run();
+      AND NOT EXISTS (SELECT 1 FROM orders WHERE promo_code = ? AND user_id = ? AND status = 'paid')
+      AND NOT EXISTS (SELECT 1 FROM activation_logs WHERE user_id = ? AND details LIKE ?)`).bind(code, code, userId, userId, `Free promo ${code}:%`).run();
   if (Number(result.meta.changes ?? 0) !== 1) return false;
   await env.DB.batch([
     env.DB.prepare("INSERT INTO promo_reservations (user_id, code) VALUES (?, ?)").bind(userId, code),
-    // Kept independently of payment status so the admin can distinguish
-    // accounts that merely entered a code from successful purchasers.
-    env.DB.prepare("INSERT INTO promo_entries (promo_code, user_id) VALUES (?, ?)").bind(code, userId),
+    // Entries are audit data only; they must never lock a user out after an
+    // unfinished checkout.
+    env.DB.prepare("INSERT OR IGNORE INTO promo_entries (promo_code, user_id) VALUES (?, ?)").bind(code, userId),
   ]);
   return true;
 }
@@ -1216,7 +1224,7 @@ async function handleMessage(env: Env, message: TelegramMessage): Promise<void> 
       const code = normalizePromoCode(text);
       const promo = code ? await getPromoCode(env, code) : null;
       if (!promo) { await sendMessage(env, message.chat.id, "Промокод не найден или отключён."); return; }
-      if (!(await reservePromo(env, message.from.id, promo.code))) { await sendMessage(env, message.chat.id, "Этот промокод уже был использован на вашем аккаунте или его лимит закончился."); return; }
+      if (!(await reservePromo(env, message.from.id, promo.code))) { await sendMessage(env, message.chat.id, "Этот промокод уже был успешно применён на вашем аккаунте или его лимит закончился."); return; }
       if (promo.duration_days) {
         if (promo.free_grant === 1) {
           await takePromoReservation(env, message.from.id, promo.code);

@@ -1322,18 +1322,24 @@ async function getPromoCode(env, code) {
     WHERE code = ? AND active = 1 AND (expires_at IS NULL OR expires_at > datetime('now'))`).bind(code).first();
 }
 async function reservePromo(env, userId, code) {
-  const existingReservation = await env.DB.prepare("SELECT 1 FROM promo_reservations WHERE user_id = ?").bind(userId).first();
-  if (existingReservation) return false;
+  const existing = await env.DB.prepare("SELECT code FROM promo_reservations WHERE user_id = ?").bind(userId).first();
+  if (existing) {
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM promo_reservations WHERE user_id = ?").bind(userId),
+      env.DB.prepare("UPDATE promo_codes SET activation_count = MAX(0, activation_count - 1), updated_at = datetime('now') WHERE code = ?").bind(existing.code)
+    ]);
+  }
   const result = await env.DB.prepare(`UPDATE promo_codes SET activation_count = activation_count + 1, updated_at = datetime('now')
     WHERE code = ? AND active = 1 AND (expires_at IS NULL OR expires_at > datetime('now'))
       AND (unlimited_activations = 1 OR activation_count < max_activations)
-      AND NOT EXISTS (SELECT 1 FROM promo_entries WHERE promo_code = ? AND user_id = ?)`).bind(code, code, userId).run();
+      AND NOT EXISTS (SELECT 1 FROM orders WHERE promo_code = ? AND user_id = ? AND status = 'paid')
+      AND NOT EXISTS (SELECT 1 FROM activation_logs WHERE user_id = ? AND details LIKE ?)`).bind(code, code, userId, userId, `Free promo ${code}:%`).run();
   if (Number(result.meta.changes ?? 0) !== 1) return false;
   await env.DB.batch([
     env.DB.prepare("INSERT INTO promo_reservations (user_id, code) VALUES (?, ?)").bind(userId, code),
-    // Kept independently of payment status so the admin can distinguish
-    // accounts that merely entered a code from successful purchasers.
-    env.DB.prepare("INSERT INTO promo_entries (promo_code, user_id) VALUES (?, ?)").bind(code, userId)
+    // Entries are audit data only; they must never lock a user out after an
+    // unfinished checkout.
+    env.DB.prepare("INSERT OR IGNORE INTO promo_entries (promo_code, user_id) VALUES (?, ?)").bind(code, userId)
   ]);
   return true;
 }
@@ -1918,7 +1924,7 @@ async function handleMessage(env, message) {
         return;
       }
       if (!await reservePromo(env, message.from.id, promo.code)) {
-        await sendMessage(env, message.chat.id, "\u042D\u0442\u043E\u0442 \u043F\u0440\u043E\u043C\u043E\u043A\u043E\u0434 \u0443\u0436\u0435 \u0431\u044B\u043B \u0438\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D \u043D\u0430 \u0432\u0430\u0448\u0435\u043C \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0435 \u0438\u043B\u0438 \u0435\u0433\u043E \u043B\u0438\u043C\u0438\u0442 \u0437\u0430\u043A\u043E\u043D\u0447\u0438\u043B\u0441\u044F.");
+        await sendMessage(env, message.chat.id, "\u042D\u0442\u043E\u0442 \u043F\u0440\u043E\u043C\u043E\u043A\u043E\u0434 \u0443\u0436\u0435 \u0431\u044B\u043B \u0443\u0441\u043F\u0435\u0448\u043D\u043E \u043F\u0440\u0438\u043C\u0435\u043D\u0451\u043D \u043D\u0430 \u0432\u0430\u0448\u0435\u043C \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0435 \u0438\u043B\u0438 \u0435\u0433\u043E \u043B\u0438\u043C\u0438\u0442 \u0437\u0430\u043A\u043E\u043D\u0447\u0438\u043B\u0441\u044F.");
         return;
       }
       if (promo.duration_days) {
