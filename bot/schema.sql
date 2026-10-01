@@ -38,6 +38,11 @@ CREATE TABLE IF NOT EXISTS orders (
   duration_days INTEGER CHECK (duration_days IS NULL OR duration_days > 0),
   amount_rub INTEGER NOT NULL CHECK (amount_rub > 0),
   promo_code TEXT REFERENCES promo_codes(code),
+  partner_code TEXT,
+  partner_percent INTEGER,
+  partner_label TEXT,
+  partner_expires_at TEXT,
+  partner_referral_expires_at TEXT,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'cancelled')),
   quickpay_url TEXT NOT NULL,
   operation_id TEXT UNIQUE,
@@ -103,4 +108,93 @@ CREATE TABLE IF NOT EXISTS telegram_rate_limits (
   user_id INTEGER PRIMARY KEY REFERENCES users(telegram_id),
   window_started_ms INTEGER NOT NULL,
   action_count INTEGER NOT NULL
+);
+
+
+-- Partner programme. A referral is tied to the first active partner link a
+-- user opens; rewards are written only after YooKassa confirms a payment.
+CREATE TABLE IF NOT EXISTS partners (
+  code TEXT PRIMARY KEY,
+  percent INTEGER NOT NULL CHECK(percent BETWEEN 1 AND 100),
+  payment_label TEXT NOT NULL,
+  expires_at TEXT,
+  referral_purchase_expires_at TEXT,
+  active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS partner_attributions (
+  user_id INTEGER PRIMARY KEY REFERENCES users(telegram_id),
+  partner_code TEXT NOT NULL REFERENCES partners(code),
+  attributed_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS partner_rewards (
+  order_id TEXT PRIMARY KEY REFERENCES orders(id),
+  partner_code TEXT NOT NULL,
+  amount_rub INTEGER NOT NULL,
+  percent INTEGER NOT NULL,
+  reward_kopeks INTEGER NOT NULL,
+  payment_label TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_partner_rewards_code ON partner_rewards(partner_code, created_at DESC);
+CREATE TABLE IF NOT EXISTS partner_input_sessions (
+  user_id INTEGER PRIMARY KEY REFERENCES users(telegram_id),
+  expires_at TEXT NOT NULL
+);
+-- A partner may see only their own dashboard. Administration and disabling
+-- remain exclusively available to ADMIN_TELEGRAM_ID.
+CREATE TABLE IF NOT EXISTS partner_admin_sessions (
+  admin_id INTEGER PRIMARY KEY REFERENCES users(telegram_id),
+  action TEXT NOT NULL CHECK(action IN ('extend_partner', 'extend_referral')),
+  partner_code TEXT NOT NULL REFERENCES partners(code),
+  expires_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS partner_accesses (
+  partner_code TEXT PRIMARY KEY REFERENCES partners(code),
+  user_id INTEGER NOT NULL UNIQUE REFERENCES users(telegram_id),
+  granted_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_partner_accesses_user ON partner_accesses(user_id);
+CREATE TABLE IF NOT EXISTS partner_access_sessions (
+  admin_id INTEGER PRIMARY KEY REFERENCES users(telegram_id),
+  partner_code TEXT NOT NULL REFERENCES partners(code),
+  expires_at TEXT NOT NULL
+);
+
+-- Manual payout requests: a delegated partner may request a payout at most
+-- three times per rolling 24-hour period. No transfer is initiated by this table.
+CREATE TABLE IF NOT EXISTS partner_payout_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  partner_code TEXT NOT NULL REFERENCES partners(code),
+  requester_user_id INTEGER NOT NULL REFERENCES users(telegram_id),
+  message TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'paid')),
+  amount_kopeks INTEGER,
+  confirmed_by INTEGER REFERENCES users(telegram_id),
+  confirmed_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_partner_payout_requests_user_time ON partner_payout_requests(requester_user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_partner_payout_requests_status_time ON partner_payout_requests(status, confirmed_at DESC);
+CREATE TABLE IF NOT EXISTS partner_payout_confirm_sessions (
+  admin_id INTEGER PRIMARY KEY REFERENCES users(telegram_id),
+  request_id INTEGER NOT NULL REFERENCES partner_payout_requests(id),
+  expires_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS partner_payout_sessions (
+  user_id INTEGER PRIMARY KEY REFERENCES users(telegram_id),
+  partner_code TEXT NOT NULL REFERENCES partners(code),
+  expires_at TEXT NOT NULL
+);
+
+-- Finished partnerships remain in the recent list for 15 days and then move
+-- to the admin archive. Removing from the archive is a soft delete so payment
+-- and reward audit records remain intact.
+ALTER TABLE partners ADD COLUMN deleted_at TEXT;
+CREATE TABLE IF NOT EXISTS partner_archive_selections (
+  admin_id INTEGER NOT NULL REFERENCES users(telegram_id),
+  partner_code TEXT NOT NULL REFERENCES partners(code),
+  selected_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (admin_id, partner_code)
 );

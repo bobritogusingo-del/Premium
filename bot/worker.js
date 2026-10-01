@@ -1,13 +1,18 @@
+var __defProp = Object.defineProperty;
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
+
 // node_modules/@noble/ciphers/utils.js
 function isBytes(a) {
   return a instanceof Uint8Array || ArrayBuffer.isView(a) && a.constructor.name === "Uint8Array" && "BYTES_PER_ELEMENT" in a && a.BYTES_PER_ELEMENT === 1;
 }
-var atitle = (title) => title ? `"${title}" ` : "";
+__name(isBytes, "isBytes");
+var atitle = /* @__PURE__ */ __name((title) => title ? `"${title}" ` : "", "atitle");
 function abool(value, title = "") {
   if (typeof value !== "boolean")
     throw new TypeError(atitle(title) + "expected boolean, got type=" + typeof value);
   return value;
 }
+__name(abool, "abool");
 function anumber(n, title = "") {
   if (typeof n !== "number")
     throw new TypeError(atitle(title) + "expected number, got " + typeof n);
@@ -15,6 +20,7 @@ function anumber(n, title = "") {
     throw new RangeError(atitle(title) + "expected integer >= 0, got " + n);
   return n;
 }
+__name(anumber, "anumber");
 function abytes(value, length, title = "") {
   if (isBytes(value) && (length === void 0 || value.length === length))
     return value;
@@ -28,16 +34,18 @@ function abytes(value, length, title = "") {
     throw new TypeError(message);
   throw new RangeError(message);
 }
-var aobject = (value, label) => {
+__name(abytes, "abytes");
+var aobject = /* @__PURE__ */ __name((value, label) => {
   if (value === null || typeof value !== "object" || Array.isArray(value))
     throw new TypeError(label === "object" ? "expected valid options object" : `"${label}" expected object, got type=${typeof value}`);
-};
+}, "aobject");
 function aexists(instance, checkFinished = true) {
   if (instance.destroyed)
     throw new Error("hash was destroyed");
   if (checkFinished && instance.finished)
     throw new Error("digest() was already called");
 }
+__name(aexists, "aexists");
 function aoutput(out, instance) {
   abytes(out, void 0, "output");
   const min = instance.outputLen;
@@ -45,27 +53,33 @@ function aoutput(out, instance) {
     throw new RangeError('"output" expected length >= ' + min);
   }
 }
+__name(aoutput, "aoutput");
 function u32(arr) {
   return new Uint32Array(arr.buffer, arr.byteOffset, Math.floor(arr.byteLength / 4));
 }
+__name(u32, "u32");
 function clean(...arrays) {
   for (let i = 0; i < arrays.length; i++) {
     arrays[i].fill(0);
   }
 }
+__name(clean, "clean");
 function createView(arr) {
   return new DataView(arr.buffer, arr.byteOffset, arr.byteLength);
 }
+__name(createView, "createView");
 var isLE = /* @__PURE__ */ (() => new Uint8Array(new Uint32Array([287454020]).buffer)[0] === 68)();
 function byteSwap(word) {
   return word << 24 & 4278190080 | word << 8 & 16711680 | word >>> 8 & 65280 | word >>> 24 & 255;
 }
+__name(byteSwap, "byteSwap");
 function byteSwap32(arr) {
   for (let i = 0; i < arr.length; i++) {
     arr[i] = byteSwap(arr[i]);
   }
   return arr;
 }
+__name(byteSwap32, "byteSwap32");
 var swap32IfBE = isLE ? (u) => u : byteSwap32;
 function overlapBytes(a, b) {
   if (!a.byteLength || !b.byteLength)
@@ -74,16 +88,19 @@ function overlapBytes(a, b) {
   a.byteOffset < b.byteOffset + b.byteLength && // a starts before b end
   b.byteOffset < a.byteOffset + a.byteLength;
 }
+__name(overlapBytes, "overlapBytes");
 function complexOverlapBytes(input, output) {
   if (overlapBytes(input, output) && input.byteOffset < output.byteOffset)
     throw new Error("complex overlap of input and output is not supported");
 }
+__name(complexOverlapBytes, "complexOverlapBytes");
 function checkOpts(defaults, opts) {
   aobject(defaults, "defaults");
   aobject(opts, "opts");
   const merged = Object.assign(defaults, opts);
   return merged;
 }
+__name(checkOpts, "checkOpts");
 function equalBytes(a, b) {
   a = abytes(a);
   b = abytes(b);
@@ -94,17 +111,19 @@ function equalBytes(a, b) {
     diff |= a[i] ^ b[i];
   return diff === 0;
 }
+__name(equalBytes, "equalBytes");
 function wrapMacConstructor(keyLen, macCons, fromMsg) {
   const mac = macCons;
   const getArgs = fromMsg || (() => []);
-  const macC = (msg, key) => mac(key, ...getArgs(msg)).update(msg).digest();
+  const macC = /* @__PURE__ */ __name((msg, key) => mac(key, ...getArgs(msg)).update(msg).digest(), "macC");
   const tmp = mac(new Uint8Array(keyLen), ...getArgs(new Uint8Array(0)));
   macC.outputLen = tmp.outputLen;
   macC.blockLen = tmp.blockLen;
   macC.create = (key, ...args) => mac(key, ...args);
   return macC;
 }
-var wrapCipher = /* @__NO_SIDE_EFFECTS__ */ (params, constructor) => {
+__name(wrapMacConstructor, "wrapMacConstructor");
+var wrapCipher = /* @__PURE__ */ __name(/* @__NO_SIDE_EFFECTS__ */ (params, constructor) => {
   function wrappedCipher(key, ...args) {
     abytes(key, void 0, "key");
     if (params.nonceLength !== void 0) {
@@ -121,13 +140,13 @@ var wrapCipher = /* @__NO_SIDE_EFFECTS__ */ (params, constructor) => {
     if (params.withAAD && args[aadStart] !== void 0)
       abytes(args[aadStart], void 0, "AAD");
     const cipher = constructor(key, ...args);
-    const checkOutput = (fnLength, output) => {
+    const checkOutput = /* @__PURE__ */ __name((fnLength, output) => {
       if (output !== void 0) {
         if (fnLength !== 2)
           throw new Error("cipher output not supported");
         abytes(output, void 0, "output");
       }
-    };
+    }, "checkOutput");
     let called = false;
     const wrCipher = {
       encrypt(data, output) {
@@ -148,9 +167,10 @@ var wrapCipher = /* @__NO_SIDE_EFFECTS__ */ (params, constructor) => {
     };
     return wrCipher;
   }
+  __name(wrappedCipher, "wrappedCipher");
   Object.assign(wrappedCipher, params);
   return wrappedCipher;
-};
+}, "wrapCipher");
 function getOutput(expectedLength, out, onlyAligned = true) {
   if (out === void 0)
     return new Uint8Array(expectedLength);
@@ -159,6 +179,7 @@ function getOutput(expectedLength, out, onlyAligned = true) {
     throw new Error("invalid output, must be aligned");
   return out;
 }
+__name(getOutput, "getOutput");
 function u64Lengths(dataLength, aadLength, isLE2) {
   anumber(dataLength);
   anumber(aadLength);
@@ -169,20 +190,24 @@ function u64Lengths(dataLength, aadLength, isLE2) {
   view.setBigUint64(8, BigInt(dataLength), isLE2);
   return num;
 }
+__name(u64Lengths, "u64Lengths");
 function isAligned32(bytes) {
   return bytes.byteOffset % 4 === 0;
 }
+__name(isAligned32, "isAligned32");
 function copyBytes(bytes) {
   return Uint8Array.from(abytes(bytes));
 }
+__name(copyBytes, "copyBytes");
 
 // node_modules/@noble/ciphers/_arx.js
-var encodeStr = (str) => Uint8Array.from(str.split(""), (c) => c.charCodeAt(0));
+var encodeStr = /* @__PURE__ */ __name((str) => Uint8Array.from(str.split(""), (c) => c.charCodeAt(0)), "encodeStr");
 var sigma16_32 = /* @__PURE__ */ (() => swap32IfBE(u32(encodeStr("expand 16-byte k"))))();
 var sigma32_32 = /* @__PURE__ */ (() => swap32IfBE(u32(encodeStr("expand 32-byte k"))))();
 function rotl(a, b) {
   return a << b | a >>> 32 - b;
 }
+__name(rotl, "rotl");
 var BLOCK_LEN = 64;
 var BLOCK_LEN32 = 16;
 var MAX_COUNTER = /* @__PURE__ */ (() => 2 ** 32 - 1)();
@@ -232,6 +257,7 @@ function runCipher(core, sigma, key, nonce, data, output, counter, rounds) {
     pos += take;
   }
 }
+__name(runCipher, "runCipher");
 function createCipher(core, opts) {
   const { allowShortKeys, extendNonceFn, counterLength, counterRight, rounds } = checkOpts({ allowShortKeys: false, counterLength: 8, counterRight: false, rounds: 20 }, opts);
   if (typeof core !== "function")
@@ -305,12 +331,17 @@ function createCipher(core, opts) {
     }
   };
 }
+__name(createCipher, "createCipher");
 
 // node_modules/@noble/ciphers/_poly1305.js
 function u8to16(a, i) {
   return a[i++] & 255 | (a[i++] & 255) << 8;
 }
+__name(u8to16, "u8to16");
 var Poly1305 = class {
+  static {
+    __name(this, "Poly1305");
+  }
   blockLen = 16;
   outputLen = 16;
   buffer = new Uint8Array(16);
@@ -645,18 +676,19 @@ function chachaCore(s, k, n, out, cnt, rounds = 20) {
   out[oi++] = y14 + x14 | 0;
   out[oi++] = y15 + x15 | 0;
 }
+__name(chachaCore, "chachaCore");
 var chacha20 = /* @__PURE__ */ createCipher(chachaCore, {
   counterRight: false,
   counterLength: 4,
   allowShortKeys: false
 });
 var ZEROS16 = /* @__PURE__ */ new Uint8Array(16);
-var updatePadded = (h, msg) => {
+var updatePadded = /* @__PURE__ */ __name((h, msg) => {
   h.update(msg);
   const leftover = msg.length % 16;
   if (leftover)
     h.update(ZEROS16.subarray(leftover));
-};
+}, "updatePadded");
 var ZEROS32 = /* @__PURE__ */ new Uint8Array(32);
 function computeTag(fn, key, nonce, ciphertext, AAD) {
   if (AAD !== void 0)
@@ -672,7 +704,8 @@ function computeTag(fn, key, nonce, ciphertext, AAD) {
   clean(authKey, lengths);
   return res;
 }
-var _poly1305_aead = (xorStream) => (key, nonce, AAD) => {
+__name(computeTag, "computeTag");
+var _poly1305_aead = /* @__PURE__ */ __name((xorStream) => (key, nonce, AAD) => {
   const tagLength = 16;
   return {
     encrypt(plaintext, output) {
@@ -701,7 +734,7 @@ var _poly1305_aead = (xorStream) => (key, nonce, AAD) => {
       return output;
     }
   };
-};
+}, "_poly1305_aead");
 var chacha20poly1305 = /* @__PURE__ */ wrapCipher(
   { blockSize: 64, nonceLength: 12, tagLength: 16, withAAD: true },
   /* @__PURE__ */ _poly1305_aead(chacha20)
@@ -718,19 +751,23 @@ function b64(bytes) {
   for (const b of bytes) text += String.fromCharCode(b);
   return btoa(text);
 }
+__name(b64, "b64");
 function b64urlBytes(value) {
   const text = atob(value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - value.length % 4) % 4));
   return Uint8Array.from(text, (c) => c.charCodeAt(0));
 }
+__name(b64urlBytes, "b64urlBytes");
 function randomChars(alphabet, count) {
   const bytes = crypto.getRandomValues(new Uint8Array(count));
   return Uint8Array.from(bytes, (b) => alphabet.charCodeAt(b % alphabet.length));
 }
+__name(randomChars, "randomChars");
 function swapPairs(value) {
   const out = value.slice();
   for (let i = 0; i + 1 < out.length; i += 2) [out[i], out[i + 1]] = [out[i + 1], out[i]];
   return out;
 }
+__name(swapPairs, "swapPairs");
 function blockSwap(value) {
   const out = value.slice();
   for (let i = 0; i + 3 < out.length; i += 4) {
@@ -739,11 +776,13 @@ function blockSwap(value) {
   }
   return out;
 }
+__name(blockSwap, "blockSwap");
 function toBigInt(bytes) {
   let n = 0n;
   for (const byte of bytes) n = n << 8n | BigInt(byte);
   return n;
 }
+__name(toBigInt, "toBigInt");
 function toBytes(value, size) {
   const out = new Uint8Array(size);
   for (let i = size - 1; i >= 0; i--) {
@@ -752,6 +791,7 @@ function toBytes(value, size) {
   }
   return out;
 }
+__name(toBytes, "toBytes");
 function modPow(base, exponent, modulus) {
   let out = 1n;
   while (exponent) {
@@ -761,6 +801,7 @@ function modPow(base, exponent, modulus) {
   }
   return out;
 }
+__name(modPow, "modPow");
 function rsaEncrypt(data) {
   const modulus = toBigInt(b64urlBytes(RSA_N));
   const size = 512;
@@ -776,6 +817,7 @@ function rsaEncrypt(data) {
   padded.set(data, 3 + ps.length);
   return toBytes(modPow(toBigInt(padded), 65537n, modulus), size);
 }
+__name(rsaEncrypt, "rsaEncrypt");
 function encryptHappCrypt5(plaintext) {
   const key = crypto.getRandomValues(new Uint8Array(32));
   const salt = randomChars(ALNUM, 8);
@@ -789,6 +831,7 @@ function encryptHappCrypt5(plaintext) {
   const pre = encoder.encode(MARKER.slice(0, 4) + String.fromCharCode(...body) + MARKER.slice(4));
   return "happ://crypt5/" + String.fromCharCode(...blockSwap(pre));
 }
+__name(encryptHappCrypt5, "encryptHappCrypt5");
 
 // src/index.ts
 var PRODUCTS = {
@@ -807,11 +850,13 @@ function happConfig(env, _plan) {
   const [providerKey, authKey] = keys;
   return { provider: env[providerKey], auth: env[authKey], limit, base };
 }
+__name(happConfig, "happConfig");
 function randomInstallCode() {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   const bytes = crypto.getRandomValues(new Uint8Array(12));
   return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
 }
+__name(randomInstallCode, "randomInstallCode");
 function findField(value, names) {
   if (!value || typeof value !== "object") return void 0;
   const record = value;
@@ -822,13 +867,16 @@ function findField(value, names) {
   }
   return void 0;
 }
+__name(findField, "findField");
 function buildHappPlainLink(code) {
   const url = HAPP_SUBSCRIPTION_ENDPOINT.replace("{INSTALL_CODE}", encodeURIComponent(code));
   return `${url}#BananchikiVpn?installid=${encodeURIComponent(code)}`;
 }
+__name(buildHappPlainLink, "buildHappPlainLink");
 function buildHappLink(_sourceUrl, code) {
   return encryptHappCrypt5(buildHappPlainLink(code));
 }
+__name(buildHappLink, "buildHappLink");
 function parseHappInstall(payload, fallbackCode, base) {
   const rc = findField(payload, ["rc"]);
   if (rc !== void 0 && ![1, "1", true, "success", "ok"].includes(rc)) throw new Error(`Happ rejected install creation: ${String(findField(payload, ["msg", "message"]) ?? rc)}`);
@@ -841,6 +889,7 @@ function parseHappInstall(payload, fallbackCode, base) {
   if (!Number.isSafeInteger(id) || id <= 0 || !code || !link) throw new Error("Happ response did not contain a usable install id and public link; configure HAPP_INSTALL_URL_BASE with the original subscription URL");
   return { id, code, link };
 }
+__name(parseHappInstall, "parseHappInstall");
 async function happRequest(env, plan, path, method = "GET", body) {
   const config = happConfig(env, plan);
   const url = new URL(`https://happ-proxy.com${path}`);
@@ -856,6 +905,7 @@ async function happRequest(env, plan, path, method = "GET", body) {
   if (!response.ok) throw new Error(`Happ HTTP error: ${response.status}`);
   return payload;
 }
+__name(happRequest, "happRequest");
 var happSubscriptionProvider = {
   async ensureSubscription(env, subscription, note) {
     const config = happConfig(env, subscription.plan);
@@ -909,17 +959,21 @@ async function reissueHappSubscription(env, userId, plan) {
     }
   }
 }
+__name(reissueHappSubscription, "reissueHappSubscription");
 async function getSubscription(env, userId, plan) {
   return env.DB.prepare("SELECT * FROM subscriptions WHERE user_id = ? AND plan = ?").bind(userId, plan).first();
 }
+__name(getSubscription, "getSubscription");
 async function getActiveSubscription(env, userId, plan) {
   return env.DB.prepare("SELECT * FROM subscriptions WHERE user_id = ? AND plan = ? AND expiration_at IS NOT NULL AND expiration_at > datetime('now')").bind(userId, plan).first();
 }
+__name(getActiveSubscription, "getActiveSubscription");
 function isRenewalSubscription(subscription) {
   if (!subscription?.expiration_at) return false;
   const expiration = (/* @__PURE__ */ new Date(`${subscription.expiration_at.replace(" ", "T")}Z`)).getTime();
   return Number.isFinite(expiration) && expiration > Date.now() - 7 * 864e5;
 }
+__name(isRenewalSubscription, "isRenewalSubscription");
 async function deliverSubscription(env, userId, plan, note) {
   let reservation = await getActiveSubscription(env, userId, plan);
   if (!reservation) throw new Error(`No active ${plan.toUpperCase()} subscription to deliver`);
@@ -951,15 +1005,18 @@ async function deliverSubscription(env, userId, plan, note) {
     throw error;
   }
 }
+__name(deliverSubscription, "deliverSubscription");
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { "content-type": "application/json; charset=utf-8" }
   });
 }
+__name(json, "json");
 function textResponse(body, status = 200) {
   return new Response(body, { status, headers: { "content-type": "text/plain; charset=utf-8" } });
 }
+__name(textResponse, "textResponse");
 async function fetchPremiumSource(env) {
   const sourceUrl = happConfig(env, "premium").base;
   if (!sourceUrl) throw new Error("HAPP_INSTALL_URL_BASE is required");
@@ -969,6 +1026,7 @@ async function fetchPremiumSource(env) {
   if (!response.ok) throw new Error(`Subscription source failed: ${response.status}`);
   return response;
 }
+__name(fetchPremiumSource, "fetchPremiumSource");
 function makeExpiredSubscriptionNotice(sourceText) {
   const parsed = JSON.parse(sourceText);
   if (!Array.isArray(parsed) || parsed.length === 0 || !parsed[0] || typeof parsed[0] !== "object") {
@@ -988,6 +1046,7 @@ function makeExpiredSubscriptionNotice(sourceText) {
     return notice;
   }));
 }
+__name(makeExpiredSubscriptionNotice, "makeExpiredSubscriptionNotice");
 async function serveHappSubscription(env, installCode) {
   if (!/^[A-Za-z0-9]{8,128}$/.test(installCode)) return textResponse("Not found", 404);
   const subscription = await env.DB.prepare(
@@ -1010,9 +1069,11 @@ async function serveHappSubscription(env, installCode) {
   headers.set("subscription-userinfo", `expire=${Math.floor(expiresAt / 1e3)}`);
   return new Response(source.body, { status: 200, headers });
 }
+__name(serveHappSubscription, "serveHappSubscription");
 function escapeHtml(value) {
   return value.replace(/[&<>"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[character]);
 }
+__name(escapeHtml, "escapeHtml");
 async function yoomoneyPaymentPage(env, orderId, paymentType) {
   requireConfig(env, ["YOOMONEY_RECEIVER"]);
   if (paymentType !== "AC" && paymentType !== "PC") return textResponse("Payment method not found", 404);
@@ -1035,6 +1096,7 @@ async function yoomoneyPaymentPage(env, orderId, paymentType) {
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }
   });
 }
+__name(yoomoneyPaymentPage, "yoomoneyPaymentPage");
 function requireConfig(env, keys) {
   for (const key of keys) {
     const value = env[key];
@@ -1043,6 +1105,7 @@ function requireConfig(env, keys) {
     }
   }
 }
+__name(requireConfig, "requireConfig");
 async function telegramApi(env, method, payload) {
   requireConfig(env, ["TELEGRAM_BOT_TOKEN"]);
   const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/${method}`, {
@@ -1056,6 +1119,7 @@ async function telegramApi(env, method, payload) {
   }
   return data.result;
 }
+__name(telegramApi, "telegramApi");
 async function sendMessage(env, chatId, text, replyMarkup) {
   await telegramApi(env, "sendMessage", {
     chat_id: chatId,
@@ -1063,9 +1127,11 @@ async function sendMessage(env, chatId, text, replyMarkup) {
     ...replyMarkup ? { reply_markup: replyMarkup } : {}
   });
 }
+__name(sendMessage, "sendMessage");
 function protectedLinkBlock(link) {
   return `<blockquote expandable><code>${escapeHtml(link)}</code></blockquote>`;
 }
+__name(protectedLinkBlock, "protectedLinkBlock");
 function happPlatformKeyboard(showReissue = false, showDevices = false) {
   const rows = [
     [
@@ -1078,6 +1144,7 @@ function happPlatformKeyboard(showReissue = false, showDevices = false) {
   rows.push([{ text: "\u{1F4D6} \u041D\u0443\u0436\u043D\u0430 \u0438\u043D\u0441\u0442\u0440\u0443\u043A\u0446\u0438\u044F", callback_data: "happ:guide" }]);
   return { inline_keyboard: rows };
 }
+__name(happPlatformKeyboard, "happPlatformKeyboard");
 async function sendSubscriptionChoice(env, chatId, header, showReissue = false, showDevices = false) {
   await telegramApi(env, "sendMessage", {
     chat_id: chatId,
@@ -1088,6 +1155,7 @@ async function sendSubscriptionChoice(env, chatId, header, showReissue = false, 
     reply_markup: happPlatformKeyboard(showReissue, showDevices)
   });
 }
+__name(sendSubscriptionChoice, "sendSubscriptionChoice");
 async function sendSubscriptionLink(env, chatId, header, link) {
   await telegramApi(env, "sendMessage", {
     chat_id: chatId,
@@ -1098,6 +1166,7 @@ ${protectedLinkBlock(link)}`,
     reply_markup: { inline_keyboard: [[{ text: "\u{1F4D6} \u041D\u0443\u0436\u043D\u0430 \u0438\u043D\u0441\u0442\u0440\u0443\u043A\u0446\u0438\u044F", callback_data: "happ:guide" }]] }
   });
 }
+__name(sendSubscriptionLink, "sendSubscriptionLink");
 async function sendPlatformSubscriptionLink(env, chatId, telegramId, platform) {
   const subscription = await getActiveSubscription(env, telegramId, "premium");
   const config = happConfig(env, "premium");
@@ -1109,6 +1178,7 @@ async function sendPlatformSubscriptionLink(env, chatId, telegramId, platform) {
   const device = platform === "android" ? "Android (Happ)" : "iPhone/iPad (Happ)";
   await sendSubscriptionLink(env, chatId, `\u0421\u0441\u044B\u043B\u043A\u0430 \u0434\u043B\u044F ${device}:`, link);
 }
+__name(sendPlatformSubscriptionLink, "sendPlatformSubscriptionLink");
 var deviceActionTableReady = null;
 async function ensureDeviceActionTable(env) {
   if (!deviceActionTableReady) {
@@ -1124,6 +1194,7 @@ async function ensureDeviceActionTable(env) {
   }
   await deviceActionTableReady;
 }
+__name(ensureDeviceActionTable, "ensureDeviceActionTable");
 function collectHappDevices(value, output = /* @__PURE__ */ new Map()) {
   if (Array.isArray(value)) {
     for (const item of value) collectHappDevices(item, output);
@@ -1140,6 +1211,7 @@ function collectHappDevices(value, output = /* @__PURE__ */ new Map()) {
   }
   return output;
 }
+__name(collectHappDevices, "collectHappDevices");
 async function listHappDevices(env, subscription) {
   if (!subscription.happ_install_code && !subscription.happ_install_id) return [];
   const selector = subscription.happ_install_code ? `install_code=${encodeURIComponent(subscription.happ_install_code)}` : `install_id=${encodeURIComponent(String(subscription.happ_install_id))}`;
@@ -1150,9 +1222,11 @@ async function listHappDevices(env, subscription) {
   }
   return [...collectHappDevices(payload).values()];
 }
+__name(listHappDevices, "listHappDevices");
 function deviceLabel(device) {
   return device.name ?? "\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u043E\u0435 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u043E";
 }
+__name(deviceLabel, "deviceLabel");
 async function sendHappDevices(env, chatId, telegramId) {
   const subscription = await getActiveSubscription(env, telegramId, "premium");
   if (!subscription?.happ_install_code) {
@@ -1179,6 +1253,7 @@ async function sendHappDevices(env, chatId, telegramId) {
 
 \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u043E, \u043A\u043E\u0442\u043E\u0440\u043E\u0435 \u0445\u043E\u0442\u0438\u0442\u0435 \u043E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C:`, { inline_keyboard: rows });
 }
+__name(sendHappDevices, "sendHappDevices");
 async function removeHappDevice(env, telegramId, token) {
   if (!/^[A-Za-z0-9]{12}$/.test(token)) return false;
   await ensureDeviceActionTable(env);
@@ -1203,6 +1278,7 @@ async function removeHappDevice(env, telegramId, token) {
   await env.DB.prepare("DELETE FROM happ_device_actions WHERE token = ?").bind(token).run();
   return true;
 }
+__name(removeHappDevice, "removeHappDevice");
 async function answerCallback(env, callbackQueryId, text) {
   try {
     await telegramApi(env, "answerCallbackQuery", {
@@ -1213,7 +1289,9 @@ async function answerCallback(env, callbackQueryId, text) {
     console.error("answerCallbackQuery failed", error);
   }
 }
+__name(answerCallback, "answerCallback");
 async function upsertUser(env, user) {
+  const existed = await env.DB.prepare("SELECT 1 FROM users WHERE telegram_id = ?").bind(user.id).first();
   await env.DB.prepare(
     `INSERT INTO users (telegram_id, username, first_name)
      VALUES (?, ?, ?)
@@ -1222,10 +1300,13 @@ async function upsertUser(env, user) {
        first_name = excluded.first_name,
        updated_at = datetime('now')`
   ).bind(user.id, user.username ?? null, user.first_name ?? null).run();
+  return !existed;
 }
+__name(upsertUser, "upsertUser");
 async function getUser(env, telegramId) {
   return env.DB.prepare("SELECT * FROM users WHERE telegram_id = ?").bind(telegramId).first();
 }
+__name(getUser, "getUser");
 async function isChannelMember(env, telegramId) {
   try {
     requireConfig(env, ["CHANNEL_ID"]);
@@ -1239,6 +1320,7 @@ async function isChannelMember(env, telegramId) {
     return false;
   }
 }
+__name(isChannelMember, "isChannelMember");
 function membershipKeyboard(env) {
   const buttons = [];
   if (env.CHANNEL_INVITE_URL && !env.CHANNEL_INVITE_URL.includes("REPLACE_WITH")) {
@@ -1247,6 +1329,7 @@ function membershipKeyboard(env) {
   buttons.push([{ text: "\u042F \u043F\u043E\u0434\u043F\u0438\u0441\u0430\u043B\u0441\u044F \u2014 \u043F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C", callback_data: "check_membership" }]);
   return { inline_keyboard: buttons };
 }
+__name(membershipKeyboard, "membershipKeyboard");
 async function sendMembershipPrompt(env, chatId) {
   const invite = env.CHANNEL_INVITE_URL && !env.CHANNEL_INVITE_URL.includes("REPLACE_WITH") ? `
 \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u043A\u0430\u043D\u0430\u043B: ${env.CHANNEL_INVITE_URL}` : "";
@@ -1257,17 +1340,20 @@ async function sendMembershipPrompt(env, chatId) {
     membershipKeyboard(env)
   );
 }
+__name(sendMembershipPrompt, "sendMembershipPrompt");
 async function ensureMembership(env, chatId, telegramId) {
   const member = await isChannelMember(env, telegramId);
   if (!member) await sendMembershipPrompt(env, chatId);
   return member;
 }
+__name(ensureMembership, "ensureMembership");
 function planKeyboard() {
   return { inline_keyboard: [
     [{ text: "\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0441\u0440\u043E\u043A Premium", callback_data: "plan:premium" }],
     [{ text: "\u041F\u043E\u043F\u0440\u043E\u0431\u043E\u0432\u0430\u0442\u044C \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u043E \u2014 3 \u0434\u043D\u044F", callback_data: "trial" }]
   ] };
 }
+__name(planKeyboard, "planKeyboard");
 function durationKeyboard(plan) {
   return {
     inline_keyboard: DURATIONS.map((duration) => [
@@ -1275,52 +1361,74 @@ function durationKeyboard(plan) {
     ])
   };
 }
+__name(durationKeyboard, "durationKeyboard");
 function adminKeyboard() {
   return { inline_keyboard: [
     [{ text: "\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0441\u043A\u0438\u0434\u043E\u0447\u043D\u044B\u0439 \u043F\u0440\u043E\u043C\u043E\u043A\u043E\u0434", callback_data: "admin:promo:discount" }],
     [{ text: "\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u0440\u043E\u043C\u043E\u043A\u043E\u0434 \u043D\u0430 \u0434\u043D\u0438", callback_data: "admin:promo:days" }],
     [{ text: "\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u044B\u0435 \u0434\u043D\u0438", callback_data: "admin:promo:free_days" }],
-    [{ text: "\u{1F4CB} \u0421\u043F\u0438\u0441\u043E\u043A \u043F\u0440\u043E\u043C\u043E\u043A\u043E\u0434\u043E\u0432", callback_data: "admin:promo:hub" }]
+    [{ text: "\u{1F4CB} \u0421\u043F\u0438\u0441\u043E\u043A \u043F\u0440\u043E\u043C\u043E\u043A\u043E\u0434\u043E\u0432", callback_data: "admin:promo:hub" }],
+    [{ text: "\u{1F91D} \u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0438", callback_data: "admin:partner:hub" }]
   ] };
 }
+__name(adminKeyboard, "adminKeyboard");
 function isAdmin(env, telegramId) {
   return Boolean(env.ADMIN_TELEGRAM_ID && String(telegramId) === env.ADMIN_TELEGRAM_ID);
 }
+__name(isAdmin, "isAdmin");
 function normalizePromoCode(value) {
   const code = value.trim().toUpperCase();
   return /^[A-Z0-9_-]{3,32}$/.test(code) ? code : null;
 }
+__name(normalizePromoCode, "normalizePromoCode");
 function promoPrice(days, discountPercent) {
   return Math.max(1, Math.round(250 * days / 30 * (100 - discountPercent) / 100));
 }
-function parsePromoExpiry(value) {
-  if (!value) return null;
+__name(promoPrice, "promoPrice");
+function parsePromoExpiry(value, timeValue) {
+  if (!value) return timeValue ? void 0 : null;
   const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value);
   if (!match) return void 0;
   const [, dayText, monthText, yearText] = match;
   const day = Number(dayText);
   const month = Number(monthText);
   const year = Number(yearText);
-  const check = new Date(Date.UTC(year, month - 1, day));
-  if (check.getUTCFullYear() !== year || check.getUTCMonth() !== month - 1 || check.getUTCDate() !== day) return void 0;
-  return `${yearText}-${monthText}-${dayText} 20:59:59`;
+  const dateCheck = new Date(Date.UTC(year, month - 1, day));
+  if (dateCheck.getUTCFullYear() !== year || dateCheck.getUTCMonth() !== month - 1 || dateCheck.getUTCDate() !== day) return void 0;
+  let hour = 23;
+  let minute = 59;
+  let second = 59;
+  if (timeValue) {
+    const time = /^(\d{2}):(\d{2})$/.exec(timeValue);
+    if (!time) return void 0;
+    hour = Number(time[1]);
+    minute = Number(time[2]);
+    second = 0;
+    if (hour > 23 || minute > 59) return void 0;
+  }
+  const utc = new Date(Date.UTC(year, month - 1, day, hour - 3, minute, second));
+  return utc.toISOString().slice(0, 19).replace("T", " ");
 }
+__name(parsePromoExpiry, "parsePromoExpiry");
 async function setInputSession(env, userId, kind) {
   await env.DB.prepare(`INSERT INTO input_sessions (user_id, kind, expires_at)
     VALUES (?, ?, datetime('now', '+10 minutes'))
     ON CONFLICT(user_id) DO UPDATE SET kind = excluded.kind, expires_at = excluded.expires_at`).bind(userId, kind).run();
 }
+__name(setInputSession, "setInputSession");
 async function takeInputSession(env, userId) {
   const session = await env.DB.prepare("SELECT kind, expires_at FROM input_sessions WHERE user_id = ? AND expires_at > datetime('now')").bind(userId).first();
   if (session) await env.DB.prepare("DELETE FROM input_sessions WHERE user_id = ?").bind(userId).run();
   return session ?? null;
 }
+__name(takeInputSession, "takeInputSession");
 async function getPromoCode(env, code) {
   return env.DB.prepare(`SELECT code, discount_percent, duration_days, max_activations, activation_count, active, free_grant,
       unlimited_activations, expires_at
     FROM promo_codes
     WHERE code = ? AND active = 1 AND (expires_at IS NULL OR expires_at > datetime('now'))`).bind(code).first();
 }
+__name(getPromoCode, "getPromoCode");
 async function reservePromo(env, userId, code) {
   const existing = await env.DB.prepare("SELECT code FROM promo_reservations WHERE user_id = ?").bind(userId).first();
   if (existing) {
@@ -1343,24 +1451,35 @@ async function reservePromo(env, userId, code) {
   ]);
   return true;
 }
+__name(reservePromo, "reservePromo");
 function formatPromoExpiry(expiresAt) {
-  return expiresAt ? expiresAt.slice(0, 10).split("-").reverse().join(".") : "\u0431\u0435\u0437 \u0434\u0430\u0442\u044B \u043E\u043A\u043E\u043D\u0447\u0430\u043D\u0438\u044F";
+  if (!expiresAt) return "\u0431\u0435\u0437 \u0434\u0430\u0442\u044B \u043E\u043A\u043E\u043D\u0447\u0430\u043D\u0438\u044F";
+  const utc = /* @__PURE__ */ new Date(`${expiresAt.replace(" ", "T")}Z`);
+  if (!Number.isFinite(utc.getTime())) return expiresAt;
+  const msk = new Date(utc.getTime() + 3 * 60 * 60 * 1e3);
+  const pad = /* @__PURE__ */ __name((value) => String(value).padStart(2, "0"), "pad");
+  return `${pad(msk.getUTCDate())}.${pad(msk.getUTCMonth() + 1)}.${msk.getUTCFullYear()} ${pad(msk.getUTCHours())}:${pad(msk.getUTCMinutes())} \u041C\u0421\u041A`;
 }
+__name(formatPromoExpiry, "formatPromoExpiry");
 function formatPromoLimit(promo) {
   return promo.unlimited_activations === 1 ? "\u221E" : String(promo.max_activations);
 }
+__name(formatPromoLimit, "formatPromoLimit");
 function promoKind(promo) {
   if (promo.free_grant === 1) return `${promo.duration_days} \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u044B\u0445 \u0434\u043D\u0435\u0439`;
   return promo.duration_days ? `${promo.duration_days} \u0434\u043D\u0435\u0439, \u0441\u043A\u0438\u0434\u043A\u0430 ${promo.discount_percent}%` : `\u0441\u043A\u0438\u0434\u043A\u0430 ${promo.discount_percent}%`;
 }
+__name(promoKind, "promoKind");
 function promoCurrentWhere(alias = "") {
   const p = alias ? `${alias}.` : "";
   return `${p}active = 1 AND (${p}expires_at IS NULL OR ${p}expires_at > datetime('now')) AND (${p}unlimited_activations = 1 OR ${p}activation_count < ${p}max_activations)`;
 }
+__name(promoCurrentWhere, "promoCurrentWhere");
 function promoExpiredWhere(alias = "") {
   const p = alias ? `${alias}.` : "";
   return `NOT (${promoCurrentWhere(alias)}) AND COALESCE(CASE WHEN ${p}expires_at IS NOT NULL AND ${p}expires_at <= datetime('now') THEN ${p}expires_at ELSE ${p}updated_at END, ${p}created_at) > datetime('now', '-3 days')`;
 }
+__name(promoExpiredWhere, "promoExpiredWhere");
 async function sendPromoHub(env, chatId) {
   const [current, expired] = await env.DB.batch([
     env.DB.prepare(`SELECT COUNT(*) AS count FROM promo_codes p WHERE ${promoCurrentWhere("p")}`),
@@ -1373,6 +1492,7 @@ async function sendPromoHub(env, chatId) {
     [{ text: `\u231B \u0418\u0441\u0442\u0451\u043A\u0448\u0438\u0435 \u0437\u0430 3 \u0434\u043D\u044F (${expiredCount})`, callback_data: "admin:promo:list:expired:0" }]
   ] });
 }
+__name(sendPromoHub, "sendPromoHub");
 async function sendPromoList(env, chatId, category, page) {
   const safePage = Math.max(0, Math.min(1e3, page));
   const pageSize = 10;
@@ -1405,12 +1525,14 @@ async function sendPromoList(env, chatId, category, page) {
 
 \u041D\u0430\u0436\u043C\u0438\u0442\u0435 \u043D\u0430 \u043F\u0440\u043E\u043C\u043E\u043A\u043E\u0434, \u0447\u0442\u043E\u0431\u044B \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u0438\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u044E:`, { inline_keyboard: rows });
 }
+__name(sendPromoList, "sendPromoList");
 async function getPromoEnteredUsers(env, code) {
   const result = await env.DB.prepare(`SELECT e.user_id, u.username, u.first_name, e.entered_at AS used_at, '\u0432\u0432\u0451\u043B \u043F\u0440\u043E\u043C\u043E\u043A\u043E\u0434' AS usage_type
     FROM promo_entries e JOIN users u ON u.telegram_id = e.user_id
     WHERE e.promo_code = ? ORDER BY e.entered_at DESC LIMIT 20`).bind(code).all();
   return result.results;
 }
+__name(getPromoEnteredUsers, "getPromoEnteredUsers");
 async function getPromoPurchasers(env, code) {
   const result = await env.DB.prepare(`SELECT user_id, username, first_name, used_at, usage_type FROM (
       SELECT o.user_id, u.username, u.first_name, o.paid_at AS used_at, '\u043E\u043F\u043B\u0430\u0442\u0438\u043B \u0437\u0430\u043A\u0430\u0437' AS usage_type
@@ -1422,6 +1544,7 @@ async function getPromoPurchasers(env, code) {
     ) ORDER BY used_at DESC LIMIT 1000`).bind(code, `Free promo ${code}:%`).all();
   return result.results;
 }
+__name(getPromoPurchasers, "getPromoPurchasers");
 async function formatPromoPeople(env, users, emptyText) {
   if (!users.length) return emptyText;
   const lines = [];
@@ -1443,6 +1566,7 @@ async function formatPromoPeople(env, users, emptyText) {
   }
   return lines.join("\n");
 }
+__name(formatPromoPeople, "formatPromoPeople");
 function formatPaidPromoUsersQuotes(users) {
   if (!users.length) return ["\u041F\u043E\u043A\u0430 \u043D\u0435\u0442 \u0443\u0441\u043F\u0435\u0448\u043D\u044B\u0445 \u043F\u043E\u043A\u0443\u043F\u043E\u043A \u0438\u043B\u0438 \u0432\u044B\u0434\u0430\u0447."];
   const chunks = [];
@@ -1462,6 +1586,7 @@ function formatPaidPromoUsersQuotes(users) {
   if (lines.length) chunks.push(`<blockquote expandable>${lines.join("\n")}</blockquote>`);
   return chunks;
 }
+__name(formatPaidPromoUsersQuotes, "formatPaidPromoUsersQuotes");
 async function sendPromoInfo(env, chatId, code, category = "current") {
   const promo = await env.DB.prepare(`SELECT p.code, p.discount_percent, p.duration_days, p.max_activations, p.activation_count,
       p.active, p.free_grant, p.unlimited_activations, p.expires_at, p.created_at, p.updated_at,
@@ -1510,10 +1635,590 @@ ${paidUserQuotes[index]}`
     });
   }
 }
+__name(sendPromoInfo, "sendPromoInfo");
 async function takePromoReservation(env, userId, code) {
   const result = await env.DB.prepare("DELETE FROM promo_reservations WHERE user_id = ? AND code = ?").bind(userId, code).run();
   return Number(result.meta.changes ?? 0) === 1;
 }
+__name(takePromoReservation, "takePromoReservation");
+var partnerTablesReady = null;
+async function ensurePartnerTables(env) {
+  if (!partnerTablesReady) {
+    partnerTablesReady = (async () => {
+      const columns = await env.DB.prepare("PRAGMA table_info(orders)").all();
+      const existing = new Set(columns.results.map((column) => column.name));
+      const additions = [
+        ["partner_code", "TEXT"],
+        ["partner_percent", "INTEGER"],
+        ["partner_label", "TEXT"],
+        ["partner_expires_at", "TEXT"],
+        ["partner_referral_expires_at", "TEXT"]
+      ];
+      for (const [name, definition] of additions) {
+        if (!existing.has(name)) await env.DB.prepare(`ALTER TABLE orders ADD COLUMN ${name} ${definition}`).run();
+      }
+      const partnerColumns = await env.DB.prepare("PRAGMA table_info(partners)").all();
+      if (!partnerColumns.results.some((column) => column.name === "deleted_at")) await env.DB.prepare("ALTER TABLE partners ADD COLUMN deleted_at TEXT").run();
+      if (!partnerColumns.results.some((column) => column.name === "referral_purchase_expires_at")) await env.DB.prepare("ALTER TABLE partners ADD COLUMN referral_purchase_expires_at TEXT").run();
+      await env.DB.batch([
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS partners (
+          code TEXT PRIMARY KEY, percent INTEGER NOT NULL CHECK(percent BETWEEN 1 AND 100), payment_label TEXT NOT NULL,
+          expires_at TEXT, referral_purchase_expires_at TEXT, active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)), deleted_at TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_attributions (
+          user_id INTEGER PRIMARY KEY REFERENCES users(telegram_id), partner_code TEXT NOT NULL REFERENCES partners(code),
+          attributed_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_rewards (
+          order_id TEXT PRIMARY KEY REFERENCES orders(id), partner_code TEXT NOT NULL, amount_rub INTEGER NOT NULL,
+          percent INTEGER NOT NULL, reward_kopeks INTEGER NOT NULL, payment_label TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )`),
+        env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_partner_rewards_code ON partner_rewards(partner_code, created_at DESC)"),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_input_sessions (
+          user_id INTEGER PRIMARY KEY REFERENCES users(telegram_id), expires_at TEXT NOT NULL
+        )`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_admin_sessions (
+          admin_id INTEGER PRIMARY KEY REFERENCES users(telegram_id),
+          action TEXT NOT NULL CHECK(action IN ('extend_partner', 'extend_referral')),
+          partner_code TEXT NOT NULL REFERENCES partners(code), expires_at TEXT NOT NULL
+        )`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_accesses (
+          partner_code TEXT PRIMARY KEY REFERENCES partners(code), user_id INTEGER NOT NULL UNIQUE REFERENCES users(telegram_id),
+          granted_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )`),
+        env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_partner_accesses_user ON partner_accesses(user_id)"),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_access_sessions (
+          admin_id INTEGER PRIMARY KEY REFERENCES users(telegram_id), partner_code TEXT NOT NULL REFERENCES partners(code),
+          expires_at TEXT NOT NULL
+        )`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_payout_requests (
+          id INTEGER PRIMARY KEY AUTOINCREMENT, partner_code TEXT NOT NULL REFERENCES partners(code),
+          requester_user_id INTEGER NOT NULL REFERENCES users(telegram_id), message TEXT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )`),
+        env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_partner_payout_requests_user_time ON partner_payout_requests(requester_user_id, created_at DESC)"),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_payout_sessions (
+          user_id INTEGER PRIMARY KEY REFERENCES users(telegram_id), partner_code TEXT NOT NULL REFERENCES partners(code),
+          expires_at TEXT NOT NULL
+        )`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_payout_confirm_sessions (
+          admin_id INTEGER PRIMARY KEY REFERENCES users(telegram_id), request_id INTEGER NOT NULL REFERENCES partner_payout_requests(id),
+          expires_at TEXT NOT NULL
+        )`),
+        env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_archive_selections (
+          admin_id INTEGER NOT NULL REFERENCES users(telegram_id), partner_code TEXT NOT NULL REFERENCES partners(code),
+          selected_at TEXT NOT NULL DEFAULT (datetime('now')), PRIMARY KEY (admin_id, partner_code)
+        )`)
+      ]);
+      const payoutColumns = await env.DB.prepare("PRAGMA table_info(partner_payout_requests)").all();
+      const payoutExisting = new Set(payoutColumns.results.map((column) => column.name));
+      const payoutAdditions = [["status", "TEXT NOT NULL DEFAULT 'pending'"], ["amount_kopeks", "INTEGER"], ["confirmed_by", "INTEGER"], ["confirmed_at", "TEXT"]];
+      for (const [name, definition] of payoutAdditions) if (!payoutExisting.has(name)) await env.DB.prepare(`ALTER TABLE partner_payout_requests ADD COLUMN ${name} ${definition}`).run();
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_partner_payout_requests_status_time ON partner_payout_requests(status, confirmed_at DESC)").run();
+    })().catch((error) => {
+      partnerTablesReady = null;
+      throw error;
+    });
+  }
+  await partnerTablesReady;
+}
+__name(ensurePartnerTables, "ensurePartnerTables");
+function normalizePartnerCode(value) {
+  const code = value.trim().toUpperCase();
+  return /^[A-Z0-9_-]{3,20}$/.test(code) ? code : null;
+}
+__name(normalizePartnerCode, "normalizePartnerCode");
+function normalizePartnerLabel(value) {
+  const label = value.trim().replace(/\s+/g, " ");
+  return label.length >= 2 && label.length <= 60 && /^[\p{L}\p{N} ._\-/#]+$/u.test(label) ? label : null;
+}
+__name(normalizePartnerLabel, "normalizePartnerLabel");
+function partnerCurrentWhere(alias = "") {
+  const p = alias ? `${alias}.` : "";
+  return `${p}deleted_at IS NULL AND ${p}active = 1 AND (${p}expires_at IS NULL OR ${p}expires_at > datetime('now'))`;
+}
+__name(partnerCurrentWhere, "partnerCurrentWhere");
+async function setPartnerInputSession(env, userId) {
+  await ensurePartnerTables(env);
+  await env.DB.prepare(`INSERT INTO partner_input_sessions (user_id, expires_at) VALUES (?, datetime('now', '+10 minutes'))
+    ON CONFLICT(user_id) DO UPDATE SET expires_at = excluded.expires_at`).bind(userId).run();
+}
+__name(setPartnerInputSession, "setPartnerInputSession");
+async function takePartnerInputSession(env, userId) {
+  await ensurePartnerTables(env);
+  const result = await env.DB.prepare("DELETE FROM partner_input_sessions WHERE user_id = ? AND expires_at > datetime('now')").bind(userId).run();
+  return Number(result.meta.changes ?? 0) === 1;
+}
+__name(takePartnerInputSession, "takePartnerInputSession");
+async function setPartnerAdminSession(env, adminId, action, code) {
+  await ensurePartnerTables(env);
+  await env.DB.prepare(`INSERT INTO partner_admin_sessions (admin_id, action, partner_code, expires_at) VALUES (?, ?, ?, datetime('now', '+10 minutes'))
+    ON CONFLICT(admin_id) DO UPDATE SET action = excluded.action, partner_code = excluded.partner_code, expires_at = excluded.expires_at`).bind(adminId, action, code).run();
+}
+__name(setPartnerAdminSession, "setPartnerAdminSession");
+async function takePartnerAdminSession(env, adminId) {
+  await ensurePartnerTables(env);
+  const session = await env.DB.prepare("SELECT action, partner_code FROM partner_admin_sessions WHERE admin_id = ? AND expires_at > datetime('now')").bind(adminId).first();
+  if (session) await env.DB.prepare("DELETE FROM partner_admin_sessions WHERE admin_id = ?").bind(adminId).run();
+  return session ?? null;
+}
+__name(takePartnerAdminSession, "takePartnerAdminSession");
+async function applyPartnerAdminDays(env, chatId, session, rawDays) {
+  const days = Number(rawDays.trim());
+  if (!Number.isInteger(days) || days < 1 || days > 3650) {
+    await sendMessage(env, chatId, "\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0446\u0435\u043B\u043E\u0435 \u0447\u0438\u0441\u043B\u043E \u0434\u043D\u0435\u0439 \u043E\u0442 1 \u0434\u043E 3650. \u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043D\u0443\u0436\u043D\u043E\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u0435\u0449\u0451 \u0440\u0430\u0437.");
+    return;
+  }
+  const modifier = `+${days} days`;
+  const allowed = `deleted_at IS NULL AND NOT (${partnerArchiveWhere()})`;
+  const statement = session.action === "extend_partner" ? `UPDATE partners SET expires_at = datetime(CASE WHEN expires_at IS NULL OR expires_at <= datetime('now') THEN 'now' ELSE expires_at END, ?), active = 1, updated_at = datetime('now') WHERE code = ? AND ${allowed}` : `UPDATE partners SET referral_purchase_expires_at = datetime(CASE WHEN referral_purchase_expires_at IS NULL OR referral_purchase_expires_at <= datetime('now') THEN 'now' ELSE referral_purchase_expires_at END, ?), updated_at = datetime('now') WHERE code = ? AND ${allowed}`;
+  const result = await env.DB.prepare(statement).bind(modifier, session.partner_code).run();
+  if (!Number(result.meta.changes ?? 0)) {
+    await sendMessage(env, chatId, "\u042D\u0442\u0443 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0443 \u043D\u0435\u043B\u044C\u0437\u044F \u0438\u0437\u043C\u0435\u043D\u0438\u0442\u044C: \u043E\u043D\u0430 \u0443\u0436\u0435 \u0432 \u0430\u0440\u0445\u0438\u0432\u0435 \u0438\u043B\u0438 \u0443\u0434\u0430\u043B\u0435\u043D\u0430 \u0438\u0437 \u043F\u0430\u043D\u0435\u043B\u0438.");
+    return;
+  }
+  const partner = await env.DB.prepare("SELECT expires_at, referral_purchase_expires_at FROM partners WHERE code = ?").bind(session.partner_code).first();
+  const date = session.action === "extend_partner" ? partner?.expires_at : partner?.referral_purchase_expires_at;
+  const text = session.action === "extend_partner" ? `\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 ${session.partner_code} \u043F\u0440\u043E\u0434\u043B\u0435\u043D\u0430 \u0434\u043E: ${formatPartnerExpiry(date ?? null)}.` : `\u0423\u0447\u0451\u0442 \u043F\u043E\u043A\u0443\u043F\u043E\u043A \u0440\u0435\u0444\u0435\u0440\u0430\u043B\u043E\u0432 \u043F\u0440\u043E\u0434\u043B\u0451\u043D \u0434\u043E: ${formatPartnerExpiry(date ?? null)}.`;
+  await sendMessage(env, chatId, text);
+  await sendPartnerInfo(env, chatId, session.partner_code, "current");
+}
+__name(applyPartnerAdminDays, "applyPartnerAdminDays");
+async function setPartnerAccessSession(env, adminId, code) {
+  await ensurePartnerTables(env);
+  await env.DB.prepare(`INSERT INTO partner_access_sessions (admin_id, partner_code, expires_at) VALUES (?, ?, datetime('now', '+10 minutes'))
+    ON CONFLICT(admin_id) DO UPDATE SET partner_code = excluded.partner_code, expires_at = excluded.expires_at`).bind(adminId, code).run();
+}
+__name(setPartnerAccessSession, "setPartnerAccessSession");
+async function takePartnerAccessSession(env, adminId) {
+  await ensurePartnerTables(env);
+  const session = await env.DB.prepare("SELECT partner_code FROM partner_access_sessions WHERE admin_id = ? AND expires_at > datetime('now')").bind(adminId).first();
+  if (session) await env.DB.prepare("DELETE FROM partner_access_sessions WHERE admin_id = ?").bind(adminId).run();
+  return session?.partner_code ?? null;
+}
+__name(takePartnerAccessSession, "takePartnerAccessSession");
+async function getPartnerAccess(env, userId) {
+  await ensurePartnerTables(env);
+  return env.DB.prepare(`SELECT a.partner_code, a.user_id, u.username, u.first_name, a.granted_at
+    FROM partner_accesses a JOIN users u ON u.telegram_id = a.user_id WHERE a.user_id = ?`).bind(userId).first();
+}
+__name(getPartnerAccess, "getPartnerAccess");
+async function payoutRequestCountLastDay(env, userId) {
+  await ensurePartnerTables(env);
+  const row = await env.DB.prepare("SELECT COUNT(*) AS count FROM partner_payout_requests WHERE requester_user_id = ? AND created_at > datetime('now', '-1 day')").bind(userId).first();
+  return Number(row?.count ?? 0);
+}
+__name(payoutRequestCountLastDay, "payoutRequestCountLastDay");
+async function setPartnerPayoutSession(env, userId, code) {
+  await ensurePartnerTables(env);
+  await env.DB.prepare(`INSERT INTO partner_payout_sessions (user_id, partner_code, expires_at) VALUES (?, ?, datetime('now', '+10 minutes'))
+    ON CONFLICT(user_id) DO UPDATE SET partner_code = excluded.partner_code, expires_at = excluded.expires_at`).bind(userId, code).run();
+}
+__name(setPartnerPayoutSession, "setPartnerPayoutSession");
+async function takePartnerPayoutSession(env, userId) {
+  await ensurePartnerTables(env);
+  const session = await env.DB.prepare("SELECT partner_code FROM partner_payout_sessions WHERE user_id = ? AND expires_at > datetime('now')").bind(userId).first();
+  if (session) await env.DB.prepare("DELETE FROM partner_payout_sessions WHERE user_id = ?").bind(userId).run();
+  return session?.partner_code ?? null;
+}
+__name(takePartnerPayoutSession, "takePartnerPayoutSession");
+async function claimPartnerAttribution(env, userId, code) {
+  await ensurePartnerTables(env);
+  await env.DB.prepare(`INSERT OR IGNORE INTO partner_attributions (user_id, partner_code)
+    SELECT ?, code FROM partners WHERE code = ? AND ${partnerCurrentWhere()}`).bind(userId, code).run();
+}
+__name(claimPartnerAttribution, "claimPartnerAttribution");
+async function getPartnerOrderAttribution(env, userId) {
+  await ensurePartnerTables(env);
+  return env.DB.prepare(`SELECT p.code, p.percent, p.payment_label, p.expires_at, p.referral_purchase_expires_at
+    FROM partner_attributions a JOIN partners p ON p.code = a.partner_code
+    WHERE a.user_id = ? AND ${partnerCurrentWhere("p")}
+      AND p.referral_purchase_expires_at IS NOT NULL AND p.referral_purchase_expires_at > datetime('now')`).bind(userId).first();
+}
+__name(getPartnerOrderAttribution, "getPartnerOrderAttribution");
+function formatPartnerExpiry(expiresAt) {
+  return expiresAt ? formatPromoExpiry(expiresAt) : "\u0431\u0435\u0437 \u0441\u0440\u043E\u043A\u0430";
+}
+__name(formatPartnerExpiry, "formatPartnerExpiry");
+function formatKopeks(kopeks) {
+  return `${Math.floor(kopeks / 100)}.${String(kopeks % 100).padStart(2, "0")} \u20BD`;
+}
+__name(formatKopeks, "formatKopeks");
+async function partnerAvailableBalance(env, code) {
+  await ensurePartnerTables(env);
+  const row = await env.DB.prepare(`SELECT COALESCE((SELECT SUM(reward_kopeks) FROM partner_rewards WHERE partner_code = ?), 0) - COALESCE((SELECT SUM(amount_kopeks) FROM partner_payout_requests WHERE partner_code = ? AND status = 'paid'), 0) AS balance`).bind(code, code).first();
+  return Math.max(0, Number(row?.balance ?? 0));
+}
+__name(partnerAvailableBalance, "partnerAvailableBalance");
+function payoutWhere(category) {
+  return category === "pending" ? "r.status = 'pending'" : category === "paid" ? "r.status = 'paid' AND r.confirmed_at > datetime('now', '-7 days')" : "r.status = 'paid' AND r.confirmed_at <= datetime('now', '-7 days')";
+}
+__name(payoutWhere, "payoutWhere");
+function payoutTitle(category) {
+  return category === "pending" ? "\u041E\u0436\u0438\u0434\u0430\u044E\u0442 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F" : category === "paid" ? "\u0412\u044B\u0432\u0435\u0434\u0435\u043D\u044B \u0437\u0430 7 \u0434\u043D\u0435\u0439" : "\u0410\u0440\u0445\u0438\u0432 \u0432\u044B\u0432\u043E\u0434\u043E\u0432";
+}
+__name(payoutTitle, "payoutTitle");
+async function sendPayoutHub(env, chatId) {
+  await ensurePartnerTables(env);
+  const rows = await env.DB.batch(["pending", "paid", "archive"].map((category) => env.DB.prepare(`SELECT COUNT(*) AS count FROM partner_payout_requests r WHERE ${payoutWhere(category)}`)));
+  const count = /* @__PURE__ */ __name((index) => Number(rows[index].results[0]?.count ?? 0), "count");
+  await sendMessage(env, chatId, "\u0412\u044B\u0432\u043E\u0434\u044B \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043E\u0432", { inline_keyboard: [
+    [{ text: `\u23F3 \u041E\u0436\u0438\u0434\u0430\u044E\u0442 (${count(0)})`, callback_data: "admin:payout:list:pending:0" }],
+    [{ text: `\u2705 \u0412\u044B\u0432\u0435\u0434\u0435\u043D\u044B (${count(1)})`, callback_data: "admin:payout:list:paid:0" }],
+    [{ text: `\u{1F5C3} \u0410\u0440\u0445\u0438\u0432 (${count(2)})`, callback_data: "admin:payout:list:archive:0" }],
+    [{ text: "\u2039 \u041A \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430\u043C", callback_data: "admin:partner:hub" }]
+  ] });
+}
+__name(sendPayoutHub, "sendPayoutHub");
+async function sendPayoutList(env, chatId, category, page) {
+  await ensurePartnerTables(env);
+  const pageSize = 10;
+  const where = payoutWhere(category);
+  const total = Number((await env.DB.prepare(`SELECT COUNT(*) AS count FROM partner_payout_requests r WHERE ${where}`).first())?.count ?? 0);
+  if (!total) {
+    await sendMessage(env, chatId, `${payoutTitle(category)}: \u043D\u0435\u0442.`);
+    return;
+  }
+  const last = Math.max(0, Math.ceil(total / pageSize) - 1);
+  const current = Math.min(Math.max(0, page), last);
+  const result = await env.DB.prepare(`SELECT r.id, r.partner_code, r.requester_user_id, u.username, u.first_name, r.message, r.status, r.amount_kopeks, r.confirmed_at, r.created_at FROM partner_payout_requests r JOIN users u ON u.telegram_id = r.requester_user_id WHERE ${where} ORDER BY COALESCE(r.confirmed_at, r.created_at) DESC LIMIT ? OFFSET ?`).bind(pageSize, current * pageSize).all();
+  const buttons = result.results.map((request) => [{ text: `${category === "pending" ? "\u23F3" : category === "paid" ? "\u2705" : "\u{1F5C3}"} #${request.id} \xB7 ${request.partner_code}`, callback_data: `admin:payout:view:${request.id}:${category}` }]);
+  const nav = [];
+  if (current) nav.push({ text: "\u2039 \u041D\u0430\u0437\u0430\u0434", callback_data: `admin:payout:list:${category}:${current - 1}` });
+  if (current < last) nav.push({ text: "\u0412\u043F\u0435\u0440\u0451\u0434 \u203A", callback_data: `admin:payout:list:${category}:${current + 1}` });
+  if (nav.length) buttons.push(nav);
+  buttons.push([{ text: "\u2039 \u041A \u0432\u044B\u0432\u043E\u0434\u0430\u043C", callback_data: "admin:payout:hub" }]);
+  await sendMessage(env, chatId, `${payoutTitle(category)}: ${total}
+\u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 ${current + 1} \u0438\u0437 ${last + 1}`, { inline_keyboard: buttons });
+}
+__name(sendPayoutList, "sendPayoutList");
+async function sendPayoutInfo(env, chatId, id, category) {
+  await ensurePartnerTables(env);
+  const request = await env.DB.prepare("SELECT r.id, r.partner_code, r.requester_user_id, u.username, u.first_name, r.message, r.status, r.amount_kopeks, r.confirmed_at, r.created_at FROM partner_payout_requests r JOIN users u ON u.telegram_id = r.requester_user_id WHERE r.id = ?").bind(id).first();
+  if (!request) {
+    await sendMessage(env, chatId, "\u0417\u0430\u044F\u0432\u043A\u0430 \u043D\u0430 \u0432\u044B\u0432\u043E\u0434 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+    return;
+  }
+  const account = request.username ? `@${escapeHtml(request.username)}` : escapeHtml(request.first_name ?? "\u0411\u0435\u0437 \u0438\u043C\u0435\u043D\u0438");
+  const details = request.message ? `<blockquote expandable>${escapeHtml(request.message)}</blockquote>` : "\u041D\u0435 \u0443\u043A\u0430\u0437\u0430\u043D\u044B.";
+  const amount = request.amount_kopeks === null ? "\u0435\u0449\u0451 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0430" : formatKopeks(request.amount_kopeks);
+  const balance = await partnerAvailableBalance(env, request.partner_code);
+  const keyboard = request.status === "pending" ? [[{ text: "\u2705 \u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044C \u0432\u044B\u0432\u043E\u0434", callback_data: `admin:payout:confirm:${request.id}` }], [{ text: "\u{1F4CB} \u041A \u0441\u043F\u0438\u0441\u043A\u0443", callback_data: `admin:payout:list:${category}:0` }]] : [[{ text: "\u{1F4CB} \u041A \u0441\u043F\u0438\u0441\u043A\u0443", callback_data: `admin:payout:list:${category}:0` }]];
+  await telegramApi(env, "sendMessage", { chat_id: chatId, parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard }, text: `\u0417\u0430\u044F\u0432\u043A\u0430 #<code>${request.id}</code>
+\u0421\u0442\u0430\u0442\u0443\u0441: ${request.status === "pending" ? "\u043E\u0436\u0438\u0434\u0430\u0435\u0442" : "\u0432\u044B\u0432\u0435\u0434\u0435\u043D\u0430"}
+\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430: <code>${escapeHtml(request.partner_code)}</code>
+\u041F\u0430\u0440\u0442\u043D\u0451\u0440: ${account} \xB7 ID <code>${request.requester_user_id}</code>
+\u0421\u0443\u043C\u043C\u0430 \u0432\u044B\u0432\u043E\u0434\u0430: ${amount}
+\u0414\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0439 \u0431\u0430\u043B\u0430\u043D\u0441 \u0441\u0435\u0439\u0447\u0430\u0441: ${formatKopeks(balance)}
+\u0421\u043E\u0437\u0434\u0430\u043D\u0430: ${formatPromoExpiry(request.created_at)}
+${request.confirmed_at ? `\u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0430: ${formatPromoExpiry(request.confirmed_at)}
+` : ""}
+\u0420\u0435\u043A\u0432\u0438\u0437\u0438\u0442\u044B \u0438 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435:
+${details}` });
+}
+__name(sendPayoutInfo, "sendPayoutInfo");
+async function setPayoutConfirmSession(env, adminId, requestId) {
+  await ensurePartnerTables(env);
+  await env.DB.prepare("INSERT INTO partner_payout_confirm_sessions (admin_id, request_id, expires_at) VALUES (?, ?, datetime('now', '+10 minutes')) ON CONFLICT(admin_id) DO UPDATE SET request_id = excluded.request_id, expires_at = excluded.expires_at").bind(adminId, requestId).run();
+}
+__name(setPayoutConfirmSession, "setPayoutConfirmSession");
+async function takePayoutConfirmSession(env, adminId) {
+  await ensurePartnerTables(env);
+  const session = await env.DB.prepare("SELECT request_id FROM partner_payout_confirm_sessions WHERE admin_id = ? AND expires_at > datetime('now')").bind(adminId).first();
+  if (session) await env.DB.prepare("DELETE FROM partner_payout_confirm_sessions WHERE admin_id = ?").bind(adminId).run();
+  return session ?? null;
+}
+__name(takePayoutConfirmSession, "takePayoutConfirmSession");
+async function confirmPartnerPayout(env, chatId, adminId, requestId, rawAmount) {
+  if (!/^\d+(?:[.,]\d{1,2})?$/.test(rawAmount.trim())) {
+    await sendMessage(env, chatId, "\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u0441\u0443\u043C\u043C\u0443 \u0432 \u0440\u0443\u0431\u043B\u044F\u0445, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: 250 \u0438\u043B\u0438 250.50.");
+    return;
+  }
+  const kopeks = Math.round(Number(rawAmount.replace(",", ".")) * 100);
+  if (!Number.isSafeInteger(kopeks) || kopeks < 1) {
+    await sendMessage(env, chatId, "\u0421\u0443\u043C\u043C\u0430 \u0434\u043E\u043B\u0436\u043D\u0430 \u0431\u044B\u0442\u044C \u0431\u043E\u043B\u044C\u0448\u0435 \u043D\u0443\u043B\u044F.");
+    return;
+  }
+  const request = await env.DB.prepare("SELECT id, partner_code, requester_user_id FROM partner_payout_requests WHERE id = ? AND status = 'pending'").bind(requestId).first();
+  if (!request) {
+    await sendMessage(env, chatId, "\u0417\u0430\u044F\u0432\u043A\u0430 \u0443\u0436\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0430 \u0438\u043B\u0438 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+    return;
+  }
+  const changed = await env.DB.prepare(`UPDATE partner_payout_requests SET status = 'paid', amount_kopeks = ?, confirmed_by = ?, confirmed_at = datetime('now') WHERE id = ? AND status = 'pending' AND ? <= COALESCE((SELECT SUM(reward_kopeks) FROM partner_rewards WHERE partner_code = ?), 0) - COALESCE((SELECT SUM(amount_kopeks) FROM partner_payout_requests WHERE partner_code = ? AND status = 'paid'), 0)`).bind(kopeks, adminId, requestId, kopeks, request.partner_code, request.partner_code).run();
+  if (!Number(changed.meta.changes ?? 0)) {
+    await sendMessage(env, chatId, "\u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u0435 \u043D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E: \u0437\u0430\u044F\u0432\u043A\u0430 \u0443\u0436\u0435 \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u0430\u043D\u0430 \u0438\u043B\u0438 \u0443\u043A\u0430\u0437\u0430\u043D\u043D\u0430\u044F \u0441\u0443\u043C\u043C\u0430 \u043F\u0440\u0435\u0432\u044B\u0448\u0430\u0435\u0442 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u044B\u0439 \u0431\u0430\u043B\u0430\u043D\u0441.");
+    return;
+  }
+  await sendMessage(env, chatId, `\u0412\u044B\u0432\u043E\u0434 \u043F\u043E \u0437\u0430\u044F\u0432\u043A\u0435 #${requestId} \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043D. \u0421\u043F\u0438\u0441\u0430\u043D\u043E \u0441 \u0431\u0430\u043B\u0430\u043D\u0441\u0430 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u0430: ${formatKopeks(kopeks)}.`);
+  try {
+    await sendMessage(env, request.requester_user_id, `\u2705 \u0412\u044B\u043F\u043B\u0430\u0442\u0430 \u043F\u043E \u0432\u0430\u0448\u0435\u0439 \u0437\u0430\u044F\u0432\u043A\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0430.
+\u0421\u0443\u043C\u043C\u0430: ${formatKopeks(kopeks)}.
+\u041E\u043D\u0430 \u0441\u043F\u0438\u0441\u0430\u043D\u0430 \u0438\u0437 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u0441\u043A\u043E\u0433\u043E \u0431\u0430\u043B\u0430\u043D\u0441\u0430. \u0417\u0430\u0447\u0438\u0441\u043B\u0435\u043D\u0438\u0435 \u043C\u043E\u0436\u0435\u0442 \u0437\u0430\u043D\u0438\u043C\u0430\u0442\u044C \u0434\u043E 5 \u0440\u0430\u0431\u043E\u0447\u0438\u0445 \u0434\u043D\u0435\u0439; \u0443\u0441\u043A\u043E\u0440\u0438\u0442\u044C \u0435\u0433\u043E \u043D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E.`);
+  } catch (error) {
+    console.error("Could not notify partner about confirmed payout", error);
+  }
+}
+__name(confirmPartnerPayout, "confirmPartnerPayout");
+function partnerFinishedWhere(alias = "") {
+  const p = alias ? `${alias}.` : "";
+  return `${p}deleted_at IS NULL AND (( ${p}active = 0 AND ${p}updated_at > datetime('now', '-15 days')) OR (${p}active = 1 AND ${p}expires_at IS NOT NULL AND ${p}expires_at <= datetime('now') AND ${p}expires_at > datetime('now', '-15 days')))`;
+}
+__name(partnerFinishedWhere, "partnerFinishedWhere");
+function partnerArchiveWhere(alias = "") {
+  const p = alias ? `${alias}.` : "";
+  return `${p}deleted_at IS NULL AND (( ${p}active = 0 AND ${p}updated_at <= datetime('now', '-15 days')) OR (${p}active = 1 AND ${p}expires_at IS NOT NULL AND ${p}expires_at <= datetime('now', '-15 days')))`;
+}
+__name(partnerArchiveWhere, "partnerArchiveWhere");
+function partnerListWhere(category) {
+  return category === "current" ? partnerCurrentWhere() : category === "finished" ? partnerFinishedWhere() : partnerArchiveWhere();
+}
+__name(partnerListWhere, "partnerListWhere");
+function partnerListTitle(category) {
+  return category === "current" ? "\u0414\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u0435 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0438" : category === "finished" ? "\u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043D\u043D\u044B\u0435 \u0437\u0430 15 \u0434\u043D\u0435\u0439" : "\u0410\u0440\u0445\u0438\u0432 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043E\u043A";
+}
+__name(partnerListTitle, "partnerListTitle");
+async function sendPartnerHub(env, chatId) {
+  await ensurePartnerTables(env);
+  const [current, finished, archived] = await env.DB.batch([
+    env.DB.prepare(`SELECT COUNT(*) AS count FROM partners WHERE ${partnerCurrentWhere()}`),
+    env.DB.prepare(`SELECT COUNT(*) AS count FROM partners WHERE ${partnerFinishedWhere()}`),
+    env.DB.prepare(`SELECT COUNT(*) AS count FROM partners WHERE ${partnerArchiveWhere()}`)
+  ]);
+  const countAt = /* @__PURE__ */ __name((result) => Number(result.results[0]?.count ?? 0), "countAt");
+  await sendMessage(env, chatId, "\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0438\n\n\u0412\u043E\u0437\u043D\u0430\u0433\u0440\u0430\u0436\u0434\u0435\u043D\u0438\u0435 \u043D\u0430\u0447\u0438\u0441\u043B\u044F\u0435\u0442\u0441\u044F \u0442\u043E\u043B\u044C\u043A\u043E \u043F\u043E\u0441\u043B\u0435 \u0443\u0441\u043F\u0435\u0448\u043D\u043E\u0439 \u043E\u043F\u043B\u0430\u0442\u044B.", { inline_keyboard: [
+    [{ text: "\u2795 \u0421\u043E\u0437\u0434\u0430\u0442\u044C \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0443", callback_data: "admin:partner:create" }],
+    [{ text: `\u2705 \u0414\u0435\u0439\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u0435 (${countAt(current)})`, callback_data: "admin:partner:list:current:0" }],
+    [{ text: `\u231B \u0417\u0430\u0432\u0435\u0440\u0448\u0451\u043D\u043D\u044B\u0435 \u0437\u0430 15 \u0434\u043D\u0435\u0439 (${countAt(finished)})`, callback_data: "admin:partner:list:finished:0" }],
+    [{ text: `\u{1F5C3} \u0410\u0440\u0445\u0438\u0432 (${countAt(archived)})`, callback_data: "admin:partner:list:archive:0" }],
+    [{ text: "\u{1F4B8} \u0412\u044B\u0432\u043E\u0434\u044B", callback_data: "admin:payout:hub" }]
+  ] });
+}
+__name(sendPartnerHub, "sendPartnerHub");
+async function selectedArchivedCodes(env, adminId) {
+  const result = await env.DB.prepare("SELECT partner_code FROM partner_archive_selections WHERE admin_id = ?").bind(adminId).all();
+  return new Set(result.results.map((row) => row.partner_code));
+}
+__name(selectedArchivedCodes, "selectedArchivedCodes");
+async function sendPartnerList(env, chatId, category, page, adminId) {
+  await ensurePartnerTables(env);
+  const pageSize = 10;
+  const where = partnerListWhere(category);
+  const totalRow = await env.DB.prepare(`SELECT COUNT(*) AS count FROM partners WHERE ${where}`).first();
+  const total = Number(totalRow?.count ?? 0);
+  if (!total) {
+    await sendMessage(env, chatId, category === "archive" ? "\u0410\u0440\u0445\u0438\u0432 \u043F\u0443\u0441\u0442." : "\u0417\u0430\u043F\u0438\u0441\u0435\u0439 \u043F\u043E\u043A\u0430 \u043D\u0435\u0442.");
+    return;
+  }
+  const lastPage = Math.max(0, Math.ceil(total / pageSize) - 1);
+  const current = Math.min(Math.max(0, page), lastPage);
+  const result = await env.DB.prepare(`SELECT code, percent, payment_label, expires_at, referral_purchase_expires_at, active, created_at, updated_at, deleted_at FROM partners WHERE ${where}
+    ORDER BY CASE WHEN active = 0 THEN updated_at ELSE expires_at END DESC, code ASC LIMIT ? OFFSET ?`).bind(pageSize, current * pageSize).all();
+  const selected = category === "archive" ? await selectedArchivedCodes(env, adminId) : /* @__PURE__ */ new Set();
+  const rows = [];
+  for (const partner of result.results) {
+    if (category === "archive") rows.push([
+      { text: selected.has(partner.code) ? "\u2611\uFE0F" : "\u25FB\uFE0F", callback_data: `admin:partner:archive:toggle:${partner.code}:${current}` },
+      { text: `${partner.code} \xB7 ${partner.percent}%`, callback_data: `admin:partner:view:${partner.code}:${category}` }
+    ]);
+    else rows.push([{ text: `${category === "current" ? "\u2705" : "\u231B"} ${partner.code} \xB7 ${partner.percent}%`, callback_data: `admin:partner:view:${partner.code}:${category}` }]);
+  }
+  if (category === "archive") {
+    rows.push([{ text: "\u2611\uFE0F \u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0432\u0441\u0435 \u0432 \u0430\u0440\u0445\u0438\u0432\u0435", callback_data: "admin:partner:archive:selectall" }]);
+    rows.push([{ text: `\u{1F5D1} \u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0435 (${selected.size})`, callback_data: "admin:partner:archive:delete_selected" }]);
+  }
+  const nav = [];
+  if (current) nav.push({ text: "\u2039 \u041D\u0430\u0437\u0430\u0434", callback_data: `admin:partner:list:${category}:${current - 1}` });
+  if (current < lastPage) nav.push({ text: "\u0412\u043F\u0435\u0440\u0451\u0434 \u203A", callback_data: `admin:partner:list:${category}:${current + 1}` });
+  if (nav.length) rows.push(nav);
+  rows.push([{ text: "\u2039 \u041A \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430\u043C", callback_data: "admin:partner:hub" }]);
+  await sendMessage(env, chatId, `${partnerListTitle(category)}: ${total}
+\u0421\u0442\u0440\u0430\u043D\u0438\u0446\u0430 ${current + 1} \u0438\u0437 ${lastPage + 1}`, { inline_keyboard: rows });
+}
+__name(sendPartnerList, "sendPartnerList");
+async function sendPartnerInfo(env, chatId, code, category = "current") {
+  await ensurePartnerTables(env);
+  const partner = await env.DB.prepare("SELECT code, percent, payment_label, expires_at, referral_purchase_expires_at, active, created_at, updated_at, deleted_at FROM partners WHERE code = ? AND deleted_at IS NULL").bind(code).first();
+  if (!partner) {
+    await sendMessage(env, chatId, "\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+    return;
+  }
+  const stats = await env.DB.prepare(`SELECT COUNT(*) AS purchases, COALESCE(SUM(amount_rub), 0) AS turnover, COALESCE(SUM(reward_kopeks), 0) AS reward FROM partner_rewards WHERE partner_code = ?`).bind(code).first();
+  const available = await partnerAvailableBalance(env, code);
+  const active = partner.active === 1 && (!partner.expires_at || partner.expires_at > (/* @__PURE__ */ new Date()).toISOString().slice(0, 19).replace("T", " "));
+  const link = `https://t.me/BananchikiVpnBot?start=partner_${partner.code}`;
+  const access = await env.DB.prepare(`SELECT a.partner_code, a.user_id, u.username, u.first_name, a.granted_at FROM partner_accesses a JOIN users u ON u.telegram_id = a.user_id WHERE a.partner_code = ?`).bind(code).first();
+  const accessText = access ? `
+\u0414\u043E\u0441\u0442\u0443\u043F \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u0430: ${access.username ? `@${escapeHtml(access.username)}` : escapeHtml(access.first_name ?? "\u0411\u0435\u0437 \u0438\u043C\u0435\u043D\u0438")} \xB7 <code>${access.user_id}</code>` : "\n\u0414\u043E\u0441\u0442\u0443\u043F \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u0430: \u043D\u0435 \u0432\u044B\u0434\u0430\u043D";
+  const rows = [];
+  if (active) rows.push([{ text: "\u26D4 \u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0443", callback_data: `admin:partner:disable:${partner.code}` }]);
+  if (category === "archive") rows.push([{ text: "\u{1F5D1} \u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0434\u043B\u044F \u0443\u0434\u0430\u043B\u0435\u043D\u0438\u044F", callback_data: `admin:partner:archive:toggle:${partner.code}:0` }]);
+  else {
+    rows.push([{ text: "\u{1F4C5} \u041F\u0440\u043E\u0434\u043B\u0438\u0442\u044C \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0443", callback_data: `admin:partner:extend:${partner.code}` }]);
+    rows.push([{ text: partner.referral_purchase_expires_at ? "\u{1F6D2} \u041F\u0440\u043E\u0434\u043B\u0438\u0442\u044C \u0443\u0447\u0451\u0442 \u043F\u043E\u043A\u0443\u043F\u043E\u043A" : "\u{1F6D2} \u041D\u0430\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0443\u0447\u0451\u0442 \u043F\u043E\u043A\u0443\u043F\u043E\u043A", callback_data: `admin:partner:referralperiod:${partner.code}` }]);
+    rows.push([{ text: access ? "\u{1F464} \u0418\u0437\u043C\u0435\u043D\u0438\u0442\u044C \u0434\u043E\u0441\u0442\u0443\u043F \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u0430" : "\u{1F464} \u0412\u044B\u0434\u0430\u0442\u044C \u0434\u043E\u0441\u0442\u0443\u043F \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u0443", callback_data: `admin:partner:grant:${partner.code}` }]);
+  }
+  rows.push([{ text: "\u{1F4CB} \u041A \u0441\u043F\u0438\u0441\u043A\u0443", callback_data: `admin:partner:list:${category}:0` }]);
+  await telegramApi(env, "sendMessage", { chat_id: chatId, parse_mode: "HTML", reply_markup: { inline_keyboard: rows }, text: `\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430: <code>${escapeHtml(partner.code)}</code>
+\u0421\u0442\u0430\u0442\u0443\u0441: ${active ? "\u0430\u043A\u0442\u0438\u0432\u043D\u0430" : "\u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430 \u0438\u043B\u0438 \u043E\u0442\u043A\u043B\u044E\u0447\u0435\u043D\u0430"}
+\u041F\u0440\u043E\u0446\u0435\u043D\u0442: ${partner.percent}%
+\u041F\u043E\u043C\u0435\u0442\u043A\u0430 \u043F\u043B\u0430\u0442\u0435\u0436\u0430: ${escapeHtml(partner.payment_label)}
+\u0414\u0435\u0439\u0441\u0442\u0432\u0443\u0435\u0442 \u0434\u043E: ${formatPartnerExpiry(partner.expires_at)}
+\u041F\u043E\u043A\u0443\u043F\u043A\u0438 \u0440\u0435\u0444\u0435\u0440\u0430\u043B\u043E\u0432 \u0443\u0447\u0438\u0442\u044B\u0432\u0430\u044E\u0442\u0441\u044F \u0434\u043E: ${formatPartnerExpiry(partner.referral_purchase_expires_at)}${accessText}
+
+\u0421\u0441\u044B\u043B\u043A\u0430 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u0430:
+<code>${link}</code>
+
+\u0423\u0441\u043F\u0435\u0448\u043D\u044B\u0445 \u043F\u043E\u043A\u0443\u043F\u043E\u043A: ${Number(stats?.purchases ?? 0)}
+\u041E\u0431\u043E\u0440\u043E\u0442: ${Number(stats?.turnover ?? 0)} \u20BD
+\u041A \u0432\u044B\u043F\u043B\u0430\u0442\u0435 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u0443: ${formatKopeks(available)}` });
+}
+__name(sendPartnerInfo, "sendPartnerInfo");
+async function sendPartnerDashboard(env, chatId, userId) {
+  const access = await getPartnerAccess(env, userId);
+  if (!access) {
+    await sendMessage(env, chatId, "\u0414\u043E\u0441\u0442\u0443\u043F \u043A \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u0441\u043A\u043E\u0439 \u0441\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043A\u0435 \u043D\u0435 \u0432\u044B\u0434\u0430\u043D.");
+    return;
+  }
+  const partner = await env.DB.prepare("SELECT code, percent, payment_label, expires_at, referral_purchase_expires_at, active, created_at, updated_at FROM partners WHERE code = ?").bind(access.partner_code).first();
+  if (!partner) {
+    await sendMessage(env, chatId, "\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+    return;
+  }
+  const stats = await env.DB.prepare(`SELECT COUNT(*) AS purchases, COALESCE(SUM(amount_rub), 0) AS turnover, COALESCE(SUM(reward_kopeks), 0) AS reward FROM partner_rewards WHERE partner_code = ?`).bind(partner.code).first();
+  const available = await partnerAvailableBalance(env, partner.code);
+  const active = partner.active === 1 && (!partner.expires_at || partner.expires_at > (/* @__PURE__ */ new Date()).toISOString().slice(0, 19).replace("T", " "));
+  const link = `https://t.me/BananchikiVpnBot?start=partner_${partner.code}`;
+  await telegramApi(env, "sendMessage", { chat_id: chatId, parse_mode: "HTML", reply_markup: { inline_keyboard: [
+    [{ text: "\u{1F4B8} \u0417\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u044B\u0432\u043E\u0434 \u0441\u0440\u0435\u0434\u0441\u0442\u0432", callback_data: `partner:payout:start:${partner.code}` }]
+  ] }, text: `\u0412\u0430\u0448\u0430 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430: <code>${escapeHtml(partner.code)}</code>
+\u0421\u0442\u0430\u0442\u0443\u0441: ${active ? "\u0430\u043A\u0442\u0438\u0432\u043D\u0430" : "\u0437\u0430\u0432\u0435\u0440\u0448\u0435\u043D\u0430 \u0438\u043B\u0438 \u043E\u0442\u043A\u043B\u044E\u0447\u0435\u043D\u0430"}
+\u041F\u0440\u043E\u0446\u0435\u043D\u0442: ${partner.percent}%
+\u0414\u0435\u0439\u0441\u0442\u0432\u0443\u0435\u0442 \u0434\u043E: ${formatPartnerExpiry(partner.expires_at)}
+\u041F\u043E\u043A\u0443\u043F\u043A\u0438 \u0440\u0435\u0444\u0435\u0440\u0430\u043B\u043E\u0432 \u0443\u0447\u0438\u0442\u044B\u0432\u0430\u044E\u0442\u0441\u044F \u0434\u043E: ${formatPartnerExpiry(partner.referral_purchase_expires_at)}
+
+\u0412\u0430\u0448\u0430 \u0441\u0441\u044B\u043B\u043A\u0430:
+<code>${link}</code>
+
+\u0423\u0441\u043F\u0435\u0448\u043D\u044B\u0445 \u043F\u043E\u043A\u0443\u043F\u043E\u043A: ${Number(stats?.purchases ?? 0)}
+\u041E\u0431\u043E\u0440\u043E\u0442: ${Number(stats?.turnover ?? 0)} \u20BD
+\u041A \u0432\u044B\u043F\u043B\u0430\u0442\u0435: ${formatKopeks(available)}
+
+\u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0443 \u043C\u043E\u0436\u0435\u0442 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440.` });
+}
+__name(sendPartnerDashboard, "sendPartnerDashboard");
+function isValidPayoutDetails(value) {
+  const digits = (value.match(/\d/g) ?? []).length;
+  const letters = (value.match(/\p{L}/gu) ?? []).length;
+  return digits >= 10 && digits <= 19 && letters >= 2;
+}
+__name(isValidPayoutDetails, "isValidPayoutDetails");
+async function showPartnerPayoutOptions(env, chatId, userId, code) {
+  const access = await getPartnerAccess(env, userId);
+  if (!access || access.partner_code !== code) {
+    await sendMessage(env, chatId, "\u0414\u043E\u0441\u0442\u0443\u043F \u043A \u044D\u0442\u043E\u0439 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0435 \u043D\u0435 \u0432\u044B\u0434\u0430\u043D.");
+    return;
+  }
+  const used = await payoutRequestCountLastDay(env, userId);
+  if (used >= 3) {
+    await sendMessage(env, chatId, "\u041B\u0438\u043C\u0438\u0442 \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u043D\u0430 \u0432\u044B\u0432\u043E\u0434: 3 \u0437\u0430 24 \u0447\u0430\u0441\u0430. \u041F\u043E\u043F\u0440\u043E\u0431\u0443\u0439\u0442\u0435 \u043F\u043E\u0437\u0436\u0435.");
+    return;
+  }
+  await setPartnerPayoutSession(env, userId, code);
+  await sendMessage(env, chatId, `\u0417\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u0437\u0430 \u043F\u043E\u0441\u043B\u0435\u0434\u043D\u0438\u0435 24 \u0447\u0430\u0441\u0430: ${used}/3.
+
+\u0414\u043B\u044F \u0432\u044B\u043F\u043B\u0430\u0442\u044B \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E \u043E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435 \u043E\u0434\u043D\u0438\u043C \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435\u043C \u043D\u043E\u043C\u0435\u0440 \u043A\u0430\u0440\u0442\u044B \u0438\u043B\u0438 \u043D\u043E\u043C\u0435\u0440 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430 \u0438 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0431\u0430\u043D\u043A\u0430. \u041F\u0440\u0438 \u0436\u0435\u043B\u0430\u043D\u0438\u0438 \u0434\u043E\u0431\u0430\u0432\u044C\u0442\u0435 \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0439.
+
+\u0412\u044B\u0432\u043E\u0434 \u043C\u043E\u0436\u0435\u0442 \u0437\u0430\u043D\u0438\u043C\u0430\u0442\u044C \u0434\u043E 5 \u0440\u0430\u0431\u043E\u0447\u0438\u0445 \u0434\u043D\u0435\u0439, \u043D\u043E \u043E\u0431\u044B\u0447\u043D\u043E \u043F\u0440\u043E\u0438\u0441\u0445\u043E\u0434\u0438\u0442 \u0431\u044B\u0441\u0442\u0440\u0435\u0435. \u0423\u0441\u043A\u043E\u0440\u0438\u0442\u044C \u0432\u044B\u0432\u043E\u0434 \u0441\u0440\u0435\u0434\u0441\u0442\u0432 \u043D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E.
+
+\u0412\u043E\u0437\u043D\u0438\u043A\u043B\u0438 \u043F\u0440\u043E\u0431\u043B\u0435\u043C\u044B \u2014 \u043E\u0431\u0440\u0430\u0449\u0430\u0439\u0442\u0435\u0441\u044C \u043A \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443 @Olivarqy.`);
+}
+__name(showPartnerPayoutOptions, "showPartnerPayoutOptions");
+async function submitPartnerPayout(env, chatId, user, code, note) {
+  const access = await getPartnerAccess(env, user.id);
+  if (!access || access.partner_code !== code) {
+    await sendMessage(env, chatId, "\u0414\u043E\u0441\u0442\u0443\u043F \u043A \u044D\u0442\u043E\u0439 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0435 \u043D\u0435 \u0432\u044B\u0434\u0430\u043D.");
+    return;
+  }
+  const partner = await env.DB.prepare("SELECT code, percent, payment_label, expires_at, active, created_at, updated_at FROM partners WHERE code = ?").bind(code).first();
+  if (!partner) {
+    await sendMessage(env, chatId, "\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+    return;
+  }
+  const inserted = await env.DB.prepare(`INSERT INTO partner_payout_requests (partner_code, requester_user_id, message)
+    SELECT ?, ?, ? WHERE (SELECT COUNT(*) FROM partner_payout_requests WHERE requester_user_id = ? AND created_at > datetime('now', '-1 day')) < 3
+    RETURNING id`).bind(code, user.id, note, user.id).first();
+  if (!inserted?.id) {
+    await sendMessage(env, chatId, "\u041B\u0438\u043C\u0438\u0442 \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u043D\u0430 \u0432\u044B\u0432\u043E\u0434: 3 \u0437\u0430 24 \u0447\u0430\u0441\u0430. \u041F\u043E\u043F\u0440\u043E\u0431\u0443\u0439\u0442\u0435 \u043F\u043E\u0437\u0436\u0435.");
+    return;
+  }
+  const stats = await env.DB.prepare(`SELECT COUNT(*) AS purchases, COALESCE(SUM(amount_rub), 0) AS turnover, COALESCE(SUM(reward_kopeks), 0) AS reward FROM partner_rewards WHERE partner_code = ?`).bind(code).first();
+  const available = await partnerAvailableBalance(env, code);
+  const adminId = env.ADMIN_TELEGRAM_ID ? Number(env.ADMIN_TELEGRAM_ID) : NaN;
+  if (!Number.isSafeInteger(adminId)) {
+    await sendMessage(env, chatId, "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u0437\u0430\u043F\u0440\u043E\u0441. \u041F\u043E\u043F\u0440\u043E\u0431\u0443\u0439\u0442\u0435 \u043F\u043E\u0437\u0436\u0435.");
+    return;
+  }
+  const account = user.username ? `@${escapeHtml(user.username)}` : escapeHtml(user.first_name || "\u0411\u0435\u0437 \u0438\u043C\u0435\u043D\u0438");
+  const noteText = note ? `
+\u0420\u0435\u043A\u0432\u0438\u0437\u0438\u0442\u044B \u0438 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u0430:
+<blockquote expandable>${escapeHtml(note)}</blockquote>` : "\n\u0420\u0435\u043A\u0432\u0438\u0437\u0438\u0442\u044B \u0438 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u0430: \u043D\u0435 \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u044B.";
+  await telegramApi(env, "sendMessage", { chat_id: adminId, parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "\u2705 \u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u044C \u0432\u044B\u0432\u043E\u0434", callback_data: `admin:payout:confirm:${inserted.id}` }], [{ text: "\u{1F4CB} \u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0432 \u043E\u0436\u0438\u0434\u0430\u044E\u0449\u0438\u0445", callback_data: `admin:payout:view:${inserted.id}:pending` }]] }, text: `\u{1F4B8} <b>\u0417\u0430\u043F\u0440\u043E\u0441 \u0432\u044B\u0432\u043E\u0434\u0430 \u0441\u0440\u0435\u0434\u0441\u0442\u0432 #${inserted.id}</b>
+
+\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430: <code>${escapeHtml(partner.code)}</code>
+\u041F\u0430\u0440\u0442\u043D\u0451\u0440: ${account} \xB7 ID: <code>${user.id}</code>
+\u041F\u0440\u043E\u0446\u0435\u043D\u0442: ${partner.percent}%
+\u0421\u0440\u043E\u043A: ${formatPartnerExpiry(partner.expires_at)}
+\u041F\u043E\u043C\u0435\u0442\u043A\u0430 \u043F\u043B\u0430\u0442\u0435\u0436\u0430: ${escapeHtml(partner.payment_label)}
+
+\u0423\u0441\u043F\u0435\u0448\u043D\u044B\u0445 \u043F\u043E\u043A\u0443\u043F\u043E\u043A: ${Number(stats?.purchases ?? 0)}
+\u041E\u0431\u043E\u0440\u043E\u0442: ${Number(stats?.turnover ?? 0)} \u20BD
+\u0414\u043E\u0441\u0442\u0443\u043F\u043D\u043E \u043A \u0432\u044B\u043F\u043B\u0430\u0442\u0435: ${formatKopeks(available)}${noteText}` });
+  const used = await payoutRequestCountLastDay(env, user.id);
+  await sendMessage(env, chatId, `\u0417\u0430\u043F\u0440\u043E\u0441 \u043D\u0430 \u0432\u044B\u0432\u043E\u0434 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443. \u041E\u0441\u0442\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u043F\u0440\u043E\u0441\u043E\u0432 \u043D\u0430 \u0431\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0435 24 \u0447\u0430\u0441\u0430: ${Math.max(0, 3 - used)}.`);
+}
+__name(submitPartnerPayout, "submitPartnerPayout");
+async function createPartnerFromInput(env, chatId, text) {
+  const parts = text.trim().split(/\s+/);
+  const code = normalizePartnerCode(parts.shift() ?? "");
+  const percent = Number(parts.shift());
+  let expiry = null;
+  if (parts[0] && /^\d{2}\.\d{2}\.\d{4}$/.test(parts[0])) {
+    const raw = parts.shift();
+    const parsedExpiry = parsePromoExpiry(raw);
+    if (parsedExpiry === void 0) {
+      await sendMessage(env, chatId, "\u041D\u0435\u0432\u0435\u0440\u043D\u0430\u044F \u0434\u0430\u0442\u0430.");
+      return;
+    }
+    expiry = parsedExpiry;
+  }
+  const label = normalizePartnerLabel(parts.join(" "));
+  if (!code || !Number.isInteger(percent) || percent < 1 || percent > 100 || !label) {
+    await sendMessage(env, chatId, "\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u0444\u043E\u0440\u043C\u0430\u0442. \u041F\u0440\u0438\u043C\u0435\u0440: PARTNER1 20 31.12.2026 \u041E\u0441\u0435\u043D\u044C 2026");
+    return;
+  }
+  await ensurePartnerTables(env);
+  await env.DB.prepare(`INSERT INTO partners (code, percent, payment_label, expires_at) VALUES (?, ?, ?, ?)
+    ON CONFLICT(code) DO UPDATE SET percent = excluded.percent, payment_label = excluded.payment_label, expires_at = excluded.expires_at, active = 1, deleted_at = NULL, updated_at = datetime('now')`).bind(code, percent, label, expiry).run();
+  await sendMessage(env, chatId, "\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 \u0441\u043E\u0437\u0434\u0430\u043D\u0430. \u0422\u0435\u043F\u0435\u0440\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u0442\u0435 \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u044B\u0439 \u0441\u0440\u043E\u043A, \u0434\u043E \u043A\u043E\u0442\u043E\u0440\u043E\u0433\u043E \u043F\u043E\u043A\u0443\u043F\u043A\u0438 \u043D\u043E\u0432\u044B\u0445 \u0440\u0435\u0444\u0435\u0440\u0430\u043B\u043E\u0432 \u0431\u0443\u0434\u0443\u0442 \u0443\u0447\u0438\u0442\u044B\u0432\u0430\u0442\u044C\u0441\u044F.");
+  await sendPartnerInfo(env, chatId, code, "current");
+}
+__name(createPartnerFromInput, "createPartnerFromInput");
+async function recordPartnerReward(env, orderId) {
+  await ensurePartnerTables(env);
+  await env.DB.prepare(`INSERT OR IGNORE INTO partner_rewards (order_id, partner_code, amount_rub, percent, reward_kopeks, payment_label)
+    SELECT o.id, o.partner_code, o.amount_rub, o.partner_percent, o.amount_rub * o.partner_percent, o.partner_label
+    FROM orders o JOIN partners p ON p.code = o.partner_code
+    WHERE o.id = ? AND o.status = 'paid' AND o.partner_code IS NOT NULL AND o.partner_percent IS NOT NULL
+      AND o.partner_referral_expires_at IS NOT NULL AND o.partner_referral_expires_at > datetime('now'))`).bind(orderId).run();
+}
+__name(recordPartnerReward, "recordPartnerReward");
+function startPartnerCode(text) {
+  const match = /^\/start(?:@[A-Za-z0-9_]+)?\s+partner_([A-Za-z0-9_-]{3,20})$/i.exec(text.trim());
+  return match ? normalizePartnerCode(match[1]) : null;
+}
+__name(startPartnerCode, "startPartnerCode");
 async function sendPlans(env, chatId, telegramId) {
   const user = await getUser(env, telegramId);
   const trialText = user?.trial_activated ? "\n\u041F\u0440\u043E\u0431\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434 \u0443\u0436\u0435 \u0430\u043A\u0442\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u043D." : "\n\u0414\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u044B\u0439 \u043F\u0440\u043E\u0431\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434 \u043D\u0430 3 \u0434\u043D\u044F (\u043E\u0434\u0438\u043D \u0440\u0430\u0437 \u043D\u0430 \u0430\u043A\u043A\u0430\u0443\u043D\u0442).";
@@ -1528,6 +2233,7 @@ async function sendPlans(env, chatId, telegramId) {
     planKeyboard()
   );
 }
+__name(sendPlans, "sendPlans");
 async function sendSubscriptionStatus(env, chatId, telegramId) {
   const subscription = await getActiveSubscription(env, telegramId, "premium");
   if (!subscription?.expiration_at) {
@@ -1556,7 +2262,8 @@ async function sendSubscriptionStatus(env, chatId, telegramId) {
 
 \u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u0438\u0442\u044C \u0441\u0441\u044B\u043B\u043A\u0443. \u041F\u043E\u043F\u0440\u043E\u0431\u0443\u0439\u0442\u0435 \u0441\u043D\u043E\u0432\u0430 \u0447\u0435\u0440\u0435\u0437 \u043C\u0438\u043D\u0443\u0442\u0443.`);
 }
-async function createYooKassaPayment(env, orderId, amountRub) {
+__name(sendSubscriptionStatus, "sendSubscriptionStatus");
+async function createYooKassaPayment(env, orderId, amountRub, partner) {
   requireConfig(env, ["YOOKASSA_SHOP_ID", "YOOKASSA_SECRET_KEY"]);
   const authorization = btoa(`${env.YOOKASSA_SHOP_ID}:${env.YOOKASSA_SECRET_KEY}`);
   const response = await fetch("https://api.yookassa.ru/v3/payments", {
@@ -1566,7 +2273,8 @@ async function createYooKassaPayment(env, orderId, amountRub) {
       amount: { value: amountRub.toFixed(2), currency: "RUB" },
       capture: true,
       confirmation: { type: "redirect", return_url: `${WORKER_URL}/` },
-      metadata: { order_id: orderId }
+      metadata: { order_id: orderId, ...partner ? { partner_code: partner.code, partner_label: partner.payment_label } : {} },
+      ...partner ? { description: `Premium \xB7 ${partner.payment_label}` } : {}
     })
   });
   let payment;
@@ -1581,6 +2289,7 @@ async function createYooKassaPayment(env, orderId, amountRub) {
   if (typeof confirmationUrl !== "string" || !confirmationUrl.startsWith("https://")) throw new Error("YooKassa response did not include a valid confirmation URL");
   return confirmationUrl;
 }
+__name(createYooKassaPayment, "createYooKassaPayment");
 async function createOrder(env, chatId, telegramId, plan, duration, options) {
   requireConfig(env, ["YOOKASSA_SHOP_ID", "YOOKASSA_SECRET_KEY"]);
   const amount = options?.amountRub ?? PRODUCTS[plan][duration];
@@ -1589,16 +2298,17 @@ async function createOrder(env, chatId, telegramId, plan, duration, options) {
   const renewal = isRenewalSubscription(await getSubscription(env, telegramId, plan));
   const orderId = crypto.randomUUID();
   const placeholderUrl = `${WORKER_URL}/`;
+  const partner = await getPartnerOrderAttribution(env, telegramId);
   await env.DB.batch([
     env.DB.prepare(
-      `INSERT INTO orders (id, user_id, plan, duration_months, duration_days, amount_rub, promo_code, quickpay_url)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(orderId, telegramId, plan, duration, durationDays, amount, options?.promoCode ?? null, placeholderUrl),
+      `INSERT INTO orders (id, user_id, plan, duration_months, duration_days, amount_rub, promo_code, partner_code, partner_percent, partner_label, partner_expires_at, partner_referral_expires_at, quickpay_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(orderId, telegramId, plan, duration, durationDays, amount, options?.promoCode ?? null, partner?.code ?? null, partner?.percent ?? null, partner?.payment_label ?? null, partner?.expires_at ?? null, partner?.referral_purchase_expires_at ?? null, placeholderUrl),
     env.DB.prepare("UPDATE users SET updated_at = datetime('now') WHERE telegram_id = ?").bind(telegramId)
   ]);
   let paymentUrl;
   try {
-    paymentUrl = await createYooKassaPayment(env, orderId, amount);
+    paymentUrl = await createYooKassaPayment(env, orderId, amount, partner);
   } catch (error) {
     await env.DB.prepare("UPDATE orders SET status = 'cancelled' WHERE id = ? AND status = 'pending'").bind(orderId).run();
     throw error;
@@ -1613,6 +2323,7 @@ async function createOrder(env, chatId, telegramId, plan, duration, options) {
     { inline_keyboard: [[{ text: "\u041E\u043F\u043B\u0430\u0442\u0438\u0442\u044C \u0447\u0435\u0440\u0435\u0437 \u042EKassa", url: paymentUrl }]] }
   );
 }
+__name(createOrder, "createOrder");
 async function activateFreePromoDays(env, chatId, telegramId, code, days) {
   const wasActive = isRenewalSubscription(await getSubscription(env, telegramId, "premium"));
   await env.DB.batch([
@@ -1633,6 +2344,7 @@ async function activateFreePromoDays(env, chatId, telegramId, code, days) {
 
 \u0412\u0430\u0448\u0430 \u0441\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u043F\u043E\u0434\u043F\u0438\u0441\u043A\u0443:`);
 }
+__name(activateFreePromoDays, "activateFreePromoDays");
 async function activateTrial(env, chatId, telegramId) {
   const results = await env.DB.batch([
     env.DB.prepare(
@@ -1672,6 +2384,7 @@ async function activateTrial(env, chatId, telegramId) {
   const prefix = changed ? "\u041F\u0440\u043E\u0431\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434 \u0430\u043A\u0442\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u043D." : "\u041F\u0440\u043E\u0431\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434 \u0443\u0436\u0435 \u0430\u043A\u0442\u0438\u0432\u0438\u0440\u043E\u0432\u0430\u043D; \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u0430\u0432\u043B\u0438\u0432\u0430\u0435\u043C \u0434\u043E\u0441\u0442\u0443\u043F.";
   await sendSubscriptionChoice(env, chatId, [prefix, "\u0422\u0430\u0440\u0438\u0444: Premium", "\u0421\u0440\u043E\u043A: 3 \u0434\u043D\u044F (\u043F\u0440\u043E\u0431\u043D\u044B\u0439 \u043F\u0435\u0440\u0438\u043E\u0434)", "", "\u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u043F\u043E\u0434\u043F\u0438\u0441\u043A\u0443 Happ:"].join("\n"));
 }
+__name(activateTrial, "activateTrial");
 var rateLimitTableReady = null;
 async function allowTelegramAction(env, userId) {
   if (!rateLimitTableReady) {
@@ -1698,13 +2411,16 @@ async function allowTelegramAction(env, userId) {
     return true;
   }
 }
+__name(allowTelegramAction, "allowTelegramAction");
 async function rejectFrequentAction(env, chatId) {
   await sendMessage(env, chatId, "\u0421\u043B\u0438\u0448\u043A\u043E\u043C \u0447\u0430\u0441\u0442\u043E. \u041F\u043E\u0434\u043E\u0436\u0434\u0438\u0442\u0435 \u043F\u0430\u0440\u0443 \u0441\u0435\u043A\u0443\u043D\u0434.");
 }
+__name(rejectFrequentAction, "rejectFrequentAction");
 function parseDuration(value) {
   const duration = Number(value);
   return DURATIONS.includes(duration) ? duration : null;
 }
+__name(parseDuration, "parseDuration");
 async function handleCallback(env, callback) {
   const chatId = callback.message?.chat.id ?? callback.from.id;
   const data = callback.data ?? "";
@@ -1713,6 +2429,249 @@ async function handleCallback(env, callback) {
   const exemptFromRateLimit = data === "promo:redeem" || data.startsWith("promo_duration:") || data.startsWith("duration:");
   if (!isAdmin(env, callback.from.id) && !exemptFromRateLimit && !await allowTelegramAction(env, callback.from.id)) {
     await rejectFrequentAction(env, chatId);
+    return;
+  }
+  if (data === "admin:partner:hub") {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    await sendPartnerHub(env, chatId);
+    return;
+  }
+  if (data === "admin:partner:create") {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    await setPartnerInputSession(env, callback.from.id);
+    await sendMessage(env, chatId, "\u041E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435: \u041A\u041E\u0414 \u041F\u0420\u041E\u0426\u0415\u041D\u0422 [\u0414\u0414.\u041C\u041C.\u0413\u0413\u0413\u0413] \u041F\u041E\u041C\u0415\u0422\u041A\u0410\n\u0414\u0430\u0442\u0430 \u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u0430. \u041F\u043E\u043C\u0435\u0442\u043A\u0430 \u043C\u043E\u0436\u0435\u0442 \u0441\u043E\u0441\u0442\u043E\u044F\u0442\u044C \u0438\u0437 \u043D\u0435\u0441\u043A\u043E\u043B\u044C\u043A\u0438\u0445 \u0441\u043B\u043E\u0432.\n\u041F\u0440\u0438\u043C\u0435\u0440: PARTNER1 20 31.12.2026 \u041E\u0441\u0435\u043D\u044C 2026");
+    return;
+  }
+  if (data.startsWith("admin:partner:list:")) {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    const parts = data.split(":");
+    const category = parts[3] === "finished" ? "finished" : parts[3] === "archive" ? "archive" : "current";
+    const page = Number(parts[4] ?? (parts[3] && /^\d+$/.test(parts[3]) ? parts[3] : 0));
+    await sendPartnerList(env, chatId, category, Number.isInteger(page) && page >= 0 ? page : 0, callback.from.id);
+    return;
+  }
+  if (data.startsWith("admin:partner:view:")) {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    const [, , , codeRaw, categoryRaw] = data.split(":");
+    const code = normalizePartnerCode(codeRaw ?? "");
+    const category = categoryRaw === "finished" ? "finished" : categoryRaw === "archive" ? "archive" : "current";
+    if (!code) {
+      await sendMessage(env, chatId, "\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+      return;
+    }
+    await sendPartnerInfo(env, chatId, code, category);
+    return;
+  }
+  if (data.startsWith("admin:partner:extend:")) {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    const code = normalizePartnerCode(data.slice("admin:partner:extend:".length));
+    if (!code) {
+      await sendMessage(env, chatId, "\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+      return;
+    }
+    await setPartnerAdminSession(env, callback.from.id, "extend_partner", code);
+    await sendMessage(env, chatId, "\u041D\u0430 \u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0434\u043D\u0435\u0439 \u043F\u0440\u043E\u0434\u043B\u0438\u0442\u044C \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0443? \u041E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435 \u0446\u0435\u043B\u043E\u0435 \u0447\u0438\u0441\u043B\u043E \u043E\u0442 1 \u0434\u043E 3650. \u0414\u043D\u0438 \u0434\u043E\u0431\u0430\u0432\u044F\u0442\u0441\u044F \u043A \u0442\u0435\u043A\u0443\u0449\u0435\u043C\u0443 \u0441\u0440\u043E\u043A\u0443; \u0435\u0441\u043B\u0438 \u043E\u043D\u0430 \u0443\u0436\u0435 \u0438\u0441\u0442\u0435\u043A\u043B\u0430 \u2014 \u043E\u0442 \u0441\u0435\u0433\u043E\u0434\u043D\u044F\u0448\u043D\u0435\u0439 \u0434\u0430\u0442\u044B.");
+    return;
+  }
+  if (data.startsWith("admin:partner:referralperiod:")) {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    const code = normalizePartnerCode(data.slice("admin:partner:referralperiod:".length));
+    if (!code) {
+      await sendMessage(env, chatId, "\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+      return;
+    }
+    await setPartnerAdminSession(env, callback.from.id, "extend_referral", code);
+    await sendMessage(env, chatId, "\u041D\u0430 \u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0434\u043D\u0435\u0439 \u0443\u0447\u0438\u0442\u044B\u0432\u0430\u0442\u044C \u043F\u043E\u043A\u0443\u043F\u043A\u0438 \u043D\u043E\u0432\u044B\u0445 \u0440\u0435\u0444\u0435\u0440\u0430\u043B\u043E\u0432? \u041E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435 \u0446\u0435\u043B\u043E\u0435 \u0447\u0438\u0441\u043B\u043E \u043E\u0442 1 \u0434\u043E 3650. \u0414\u043D\u0438 \u0434\u043E\u0431\u0430\u0432\u044F\u0442\u0441\u044F \u043A \u0443\u0436\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u043D\u043E\u043C\u0443 \u0441\u0440\u043E\u043A\u0443; \u0435\u0441\u043B\u0438 \u043E\u043D \u043D\u0435 \u0437\u0430\u0434\u0430\u043D \u0438\u043B\u0438 \u0438\u0441\u0442\u0451\u043A \u2014 \u043D\u0430\u0447\u043D\u0443\u0442\u0441\u044F \u0441 \u0441\u0435\u0433\u043E\u0434\u043D\u044F\u0448\u043D\u0435\u0439 \u0434\u0430\u0442\u044B.");
+    return;
+  }
+  if (data.startsWith("admin:partner:disable:")) {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    const code = normalizePartnerCode(data.slice("admin:partner:disable:".length));
+    if (!code) {
+      await sendMessage(env, chatId, "\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+      return;
+    }
+    const result = await env.DB.prepare("UPDATE partners SET active = 0, updated_at = datetime('now') WHERE code = ? AND active = 1").bind(code).run();
+    await sendMessage(env, chatId, Number(result.meta.changes ?? 0) ? `\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 ${code} \u043E\u0442\u043A\u043B\u044E\u0447\u0435\u043D\u0430. \u041D\u043E\u0432\u044B\u0435 \u043E\u043F\u043B\u0430\u0442\u044B \u0431\u043E\u043B\u044C\u0448\u0435 \u043D\u0435 \u0443\u0447\u0438\u0442\u044B\u0432\u0430\u044E\u0442\u0441\u044F.` : "\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 \u0443\u0436\u0435 \u043E\u0442\u043A\u043B\u044E\u0447\u0435\u043D\u0430.");
+    return;
+  }
+  if (data.startsWith("admin:partner:grant:")) {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    const code = normalizePartnerCode(data.slice("admin:partner:grant:".length));
+    const partner = code ? await env.DB.prepare("SELECT code FROM partners WHERE code = ?").bind(code).first() : null;
+    if (!code || !partner) {
+      await sendMessage(env, chatId, "\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+      return;
+    }
+    await setPartnerAccessSession(env, callback.from.id, code);
+    await sendMessage(env, chatId, "\u041E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435 Telegram ID \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u0430. \u041E\u043D \u0434\u043E\u043B\u0436\u0435\u043D \u0445\u043E\u0442\u044F \u0431\u044B \u043E\u0434\u0438\u043D \u0440\u0430\u0437 \u043D\u0430\u043F\u0438\u0441\u0430\u0442\u044C \u0431\u043E\u0442\u0443 /start.");
+    return;
+  }
+  if (data.startsWith("partner:dashboard:")) {
+    await sendPartnerDashboard(env, chatId, callback.from.id);
+    return;
+  }
+  if (data.startsWith("partner:payout:start:")) {
+    const code = normalizePartnerCode(data.slice("partner:payout:start:".length));
+    if (!code) {
+      await sendMessage(env, chatId, "\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+      return;
+    }
+    await showPartnerPayoutOptions(env, chatId, callback.from.id, code);
+    return;
+  }
+  if (data.startsWith("partner:payout:add:")) {
+    const code = normalizePartnerCode(data.slice("partner:payout:add:".length));
+    if (!code) {
+      await sendMessage(env, chatId, "\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+      return;
+    }
+    await showPartnerPayoutOptions(env, chatId, callback.from.id, code);
+    return;
+  }
+  if (data.startsWith("partner:payout:skip:")) {
+    await sendMessage(env, chatId, "\u0420\u0435\u043A\u0432\u0438\u0437\u0438\u0442\u044B \u0434\u043B\u044F \u0432\u044B\u043F\u043B\u0430\u0442\u044B \u0442\u0435\u043F\u0435\u0440\u044C \u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u044B. \u041D\u0430\u0436\u043C\u0438\u0442\u0435 \xAB\u0417\u0430\u043F\u0440\u043E\u0441\u0438\u0442\u044C \u0432\u044B\u0432\u043E\u0434 \u0441\u0440\u0435\u0434\u0441\u0442\u0432\xBB \u0438 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u043D\u043E\u043C\u0435\u0440 \u043A\u0430\u0440\u0442\u044B \u0438\u043B\u0438 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430 \u0432\u043C\u0435\u0441\u0442\u0435 \u0441 \u0431\u0430\u043D\u043A\u043E\u043C.");
+    return;
+  }
+  if (data === "admin:payout:hub") {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    await sendPayoutHub(env, chatId);
+    return;
+  }
+  if (data.startsWith("admin:payout:list:")) {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    const [, , , categoryRaw, pageRaw] = data.split(":");
+    const category = categoryRaw === "paid" ? "paid" : categoryRaw === "archive" ? "archive" : "pending";
+    await sendPayoutList(env, chatId, category, Number(pageRaw) || 0);
+    return;
+  }
+  if (data.startsWith("admin:payout:view:")) {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    const [, , , idRaw, categoryRaw] = data.split(":");
+    const id = Number(idRaw);
+    const category = categoryRaw === "paid" ? "paid" : categoryRaw === "archive" ? "archive" : "pending";
+    if (!Number.isSafeInteger(id) || id < 1) {
+      await sendMessage(env, chatId, "\u0417\u0430\u044F\u0432\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+      return;
+    }
+    await sendPayoutInfo(env, chatId, id, category);
+    return;
+  }
+  if (data.startsWith("admin:payout:confirm:")) {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    const id = Number(data.slice("admin:payout:confirm:".length));
+    if (!Number.isSafeInteger(id) || id < 1) {
+      await sendMessage(env, chatId, "\u0417\u0430\u044F\u0432\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+      return;
+    }
+    await setPayoutConfirmSession(env, callback.from.id, id);
+    await sendMessage(env, chatId, "\u0423\u043A\u0430\u0436\u0438\u0442\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043D\u043D\u0443\u044E \u0441\u0443\u043C\u043C\u0443 \u0432\u044B\u0432\u043E\u0434\u0430 \u0432 \u0440\u0443\u0431\u043B\u044F\u0445, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: 250 \u0438\u043B\u0438 250.50. \u041E\u043D\u0430 \u0431\u0443\u0434\u0435\u0442 \u0441\u043F\u0438\u0441\u0430\u043D\u0430 \u0441 \u0431\u0430\u043B\u0430\u043D\u0441\u0430 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0435\u0441\u043B\u0438 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430.");
+    return;
+  }
+  if (data.startsWith("admin:partner:archive:toggle:")) {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    const [, , , , codeRaw, pageRaw] = data.split(":");
+    const code = normalizePartnerCode(codeRaw ?? "");
+    const page = Number(pageRaw);
+    if (!code) {
+      await sendMessage(env, chatId, "\u041F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u0430.");
+      return;
+    }
+    const valid = await env.DB.prepare(`SELECT code FROM partners WHERE code = ? AND ${partnerArchiveWhere()}`).bind(code).first();
+    if (!valid) {
+      await sendMessage(env, chatId, "\u042D\u0442\u0430 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0430 \u0431\u043E\u043B\u044C\u0448\u0435 \u043D\u0435 \u043D\u0430\u0445\u043E\u0434\u0438\u0442\u0441\u044F \u0432 \u0430\u0440\u0445\u0438\u0432\u0435.");
+      return;
+    }
+    const exists = await env.DB.prepare("SELECT 1 FROM partner_archive_selections WHERE admin_id = ? AND partner_code = ?").bind(callback.from.id, code).first();
+    if (exists) await env.DB.prepare("DELETE FROM partner_archive_selections WHERE admin_id = ? AND partner_code = ?").bind(callback.from.id, code).run();
+    else await env.DB.prepare("INSERT OR IGNORE INTO partner_archive_selections (admin_id, partner_code) VALUES (?, ?)").bind(callback.from.id, code).run();
+    await sendPartnerList(env, chatId, "archive", Number.isInteger(page) && page >= 0 ? page : 0, callback.from.id);
+    return;
+  }
+  if (data === "admin:partner:archive:selectall") {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    await env.DB.prepare(`INSERT OR IGNORE INTO partner_archive_selections (admin_id, partner_code) SELECT ?, code FROM partners WHERE ${partnerArchiveWhere()}`).bind(callback.from.id).run();
+    await sendPartnerList(env, chatId, "archive", 0, callback.from.id);
+    return;
+  }
+  if (data === "admin:partner:archive:delete_selected") {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    const selected = await selectedArchivedCodes(env, callback.from.id);
+    if (!selected.size) {
+      await sendMessage(env, chatId, "\u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0432\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0438 \u0432 \u0430\u0440\u0445\u0438\u0432\u0435.");
+      return;
+    }
+    await sendMessage(env, chatId, `\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0438\u0437 \u043F\u0430\u043D\u0435\u043B\u0438 ${selected.size} \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A(\u0438)? \u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0451\u043D\u043D\u044B\u0435 \u043E\u043F\u043B\u0430\u0442\u044B \u0438 \u043D\u0430\u0447\u0438\u0441\u043B\u0435\u043D\u0438\u044F \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0442\u0441\u044F.`, { inline_keyboard: [[
+      { text: "\u0414\u0430", callback_data: "admin:partner:archive:confirm_delete" },
+      { text: "\u041D\u0435\u0442", callback_data: "admin:partner:list:archive:0" }
+    ]] });
+    return;
+  }
+  if (data === "admin:partner:archive:confirm_delete") {
+    if (!isAdmin(env, callback.from.id)) {
+      await sendMessage(env, chatId, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
+      return;
+    }
+    await ensurePartnerTables(env);
+    const selected = await selectedArchivedCodes(env, callback.from.id);
+    if (!selected.size) {
+      await sendMessage(env, chatId, "\u0412\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0445 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043E\u043A \u0443\u0436\u0435 \u043D\u0435\u0442.");
+      return;
+    }
+    const placeholders = Array.from(selected, () => "?").join(",");
+    const codes = Array.from(selected);
+    await env.DB.batch([
+      env.DB.prepare(`UPDATE partners SET deleted_at = datetime('now') WHERE code IN (${placeholders}) AND ${partnerArchiveWhere()}`).bind(...codes),
+      env.DB.prepare(`DELETE FROM partner_accesses WHERE partner_code IN (${placeholders})`).bind(...codes),
+      env.DB.prepare("DELETE FROM partner_archive_selections WHERE admin_id = ?").bind(callback.from.id)
+    ]);
+    await sendMessage(env, chatId, "\u0412\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0435 \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0438 \u0443\u0434\u0430\u043B\u0435\u043D\u044B \u0438\u0437 \u043F\u0430\u043D\u0435\u043B\u0438. \u0423\u0447\u0451\u0442 \u043E\u043F\u043B\u0430\u0442 \u0438 \u043D\u0430\u0447\u0438\u0441\u043B\u0435\u043D\u0438\u0439 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D.");
+    await sendPartnerList(env, chatId, "archive", 0, callback.from.id);
     return;
   }
   if (data === "admin:promo:hub") {
@@ -1770,7 +2729,7 @@ async function handleCallback(env, callback) {
     const freeDays = data === "admin:promo:free_days";
     const days = data === "admin:promo:days";
     await setInputSession(env, callback.from.id, freeDays ? "admin_promo_free_days" : days ? "admin_promo_days" : "admin_promo_discount");
-    await sendMessage(env, chatId, freeDays ? "\u041E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435: \u041A\u041E\u0414 \u041A\u041E\u041B\u0418\u0427\u0415\u0421\u0422\u0412\u041E_\u0414\u041D\u0415\u0419 \u041A\u041E\u041B\u0418\u0427\u0415\u0421\u0422\u0412\u041E_\u0410\u041A\u0422\u0418\u0412\u0410\u0426\u0418\u0419 [\u0414\u0414.\u041C\u041C.\u0413\u0413\u0413\u0413]\n0 \u0430\u043A\u0442\u0438\u0432\u0430\u0446\u0438\u0439 = \u0431\u0435\u0437 \u043B\u0438\u043C\u0438\u0442\u0430. \u0414\u0430\u0442\u0430 \u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u0430.\n\u041F\u0440\u0438\u043C\u0435\u0440: GIFT7 7 0 31.12.2026" : days ? "\u041E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435: \u041A\u041E\u0414 \u041A\u041E\u041B\u0418\u0427\u0415\u0421\u0422\u0412\u041E_\u0414\u041D\u0415\u0419 \u0421\u041A\u0418\u0414\u041A\u0410_\u041F\u0420\u041E\u0426\u0415\u041D\u0422\u041E\u0412 \u041A\u041E\u041B\u0418\u0427\u0415\u0421\u0422\u0412\u041E_\u0410\u041A\u0422\u0418\u0412\u0410\u0426\u0418\u0419 [\u0414\u0414.\u041C\u041C.\u0413\u0413\u0413\u0413]\n0 \u0430\u043A\u0442\u0438\u0432\u0430\u0446\u0438\u0439 = \u0431\u0435\u0437 \u043B\u0438\u043C\u0438\u0442\u0430. \u0414\u0430\u0442\u0430 \u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u0430.\n\u041F\u0440\u0438\u043C\u0435\u0440: PROMO14 14 25 30 31.12.2026" : "\u041E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435: \u041A\u041E\u0414 \u0421\u041A\u0418\u0414\u041A\u0410_\u041F\u0420\u041E\u0426\u0415\u041D\u0422\u041E\u0412 \u041A\u041E\u041B\u0418\u0427\u0415\u0421\u0422\u0412\u041E_\u0410\u041A\u0422\u0418\u0412\u0410\u0426\u0418\u0419 [\u0414\u0414.\u041C\u041C.\u0413\u0413\u0413\u0413]\n0 \u0430\u043A\u0442\u0438\u0432\u0430\u0446\u0438\u0439 = \u0431\u0435\u0437 \u043B\u0438\u043C\u0438\u0442\u0430. \u0414\u0430\u0442\u0430 \u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u0430.\n\u041F\u0440\u0438\u043C\u0435\u0440: SALE20 20 0 31.12.2026");
+    await sendMessage(env, chatId, freeDays ? "\u041E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435: \u041A\u041E\u0414 \u041A\u041E\u041B\u0418\u0427\u0415\u0421\u0422\u0412\u041E_\u0414\u041D\u0415\u0419 \u041A\u041E\u041B\u0418\u0427\u0415\u0421\u0422\u0412\u041E_\u0410\u041A\u0422\u0418\u0412\u0410\u0426\u0418\u0419 [\u0414\u0414.\u041C\u041C.\u0413\u0413\u0413\u0413 [\u0427\u0427:\u041C\u041C]]\n\u0412\u0440\u0435\u043C\u044F \u0443\u043A\u0430\u0437\u044B\u0432\u0430\u0435\u0442\u0441\u044F \u043F\u043E \u041C\u043E\u0441\u043A\u0432\u0435. 0 \u0430\u043A\u0442\u0438\u0432\u0430\u0446\u0438\u0439 = \u0431\u0435\u0437 \u043B\u0438\u043C\u0438\u0442\u0430. \u0414\u0430\u0442\u0430 \u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u0430.\n\u041F\u0440\u0438\u043C\u0435\u0440: GIFT7 7 0 31.12.2026 12:00" : days ? "\u041E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435: \u041A\u041E\u0414 \u041A\u041E\u041B\u0418\u0427\u0415\u0421\u0422\u0412\u041E_\u0414\u041D\u0415\u0419 \u0421\u041A\u0418\u0414\u041A\u0410_\u041F\u0420\u041E\u0426\u0415\u041D\u0422\u041E\u0412 \u041A\u041E\u041B\u0418\u0427\u0415\u0421\u0422\u0412\u041E_\u0410\u041A\u0422\u0418\u0412\u0410\u0426\u0418\u0419 [\u0414\u0414.\u041C\u041C.\u0413\u0413\u0413\u0413 [\u0427\u0427:\u041C\u041C]]\n\u0412\u0440\u0435\u043C\u044F \u0443\u043A\u0430\u0437\u044B\u0432\u0430\u0435\u0442\u0441\u044F \u043F\u043E \u041C\u043E\u0441\u043A\u0432\u0435. 0 \u0430\u043A\u0442\u0438\u0432\u0430\u0446\u0438\u0439 = \u0431\u0435\u0437 \u043B\u0438\u043C\u0438\u0442\u0430. \u0414\u0430\u0442\u0430 \u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u0430.\n\u041F\u0440\u0438\u043C\u0435\u0440: PROMO14 14 25 30 31.12.2026 12:00" : "\u041E\u0442\u043F\u0440\u0430\u0432\u044C\u0442\u0435: \u041A\u041E\u0414 \u0421\u041A\u0418\u0414\u041A\u0410_\u041F\u0420\u041E\u0426\u0415\u041D\u0422\u041E\u0412 \u041A\u041E\u041B\u0418\u0427\u0415\u0421\u0422\u0412\u041E_\u0410\u041A\u0422\u0418\u0412\u0410\u0426\u0418\u0419 [\u0414\u0414.\u041C\u041C.\u0413\u0413\u0413\u0413 [\u0427\u0427:\u041C\u041C]]\n\u0412\u0440\u0435\u043C\u044F \u0443\u043A\u0430\u0437\u044B\u0432\u0430\u0435\u0442\u0441\u044F \u043F\u043E \u041C\u043E\u0441\u043A\u0432\u0435. 0 \u0430\u043A\u0442\u0438\u0432\u0430\u0446\u0438\u0439 = \u0431\u0435\u0437 \u043B\u0438\u043C\u0438\u0442\u0430. \u0414\u0430\u0442\u0430 \u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u0430.\n\u041F\u0440\u0438\u043C\u0435\u0440: SALE20 20 0 31.12.2026 12:00");
     return;
   }
   if (data === "promo:redeem") {
@@ -1898,10 +2857,12 @@ async function handleCallback(env, callback) {
     }
   }
 }
+__name(handleCallback, "handleCallback");
 function isCommand(text, command) {
   const first = text.trim().split(/\s+/)[0].toLowerCase();
   return first === command || first.startsWith(`${command}@`);
 }
+__name(isCommand, "isCommand");
 async function sendOrders(env, chatId) {
   const result = await env.DB.prepare(
     `SELECT id, user_id, plan, duration_months, amount_rub, status, created_at, paid_at
@@ -1919,10 +2880,13 @@ user ${order.user_id} \xB7 ${order.plan.toUpperCase()} ${order.duration_months}\
 
 ${lines.join("\n\n")}`);
 }
+__name(sendOrders, "sendOrders");
 async function handleMessage(env, message) {
   if (!message.from || !message.text || message.from.is_bot) return;
   const text = message.text.trim();
-  await upsertUser(env, message.from);
+  const isNewUser = await upsertUser(env, message.from);
+  const partnerCode = startPartnerCode(text);
+  if (isNewUser && partnerCode) await claimPartnerAttribution(env, message.from.id, partnerCode);
   const promoInput = isCommand(text, "/promo") || Boolean(await env.DB.prepare(
     "SELECT 1 FROM input_sessions WHERE user_id = ? AND kind = 'redeem_promo' AND expires_at > datetime('now')"
   ).bind(message.from.id).first());
@@ -1934,6 +2898,53 @@ async function handleMessage(env, message) {
     await env.DB.prepare("DELETE FROM input_sessions WHERE user_id = ?").bind(message.from.id).run();
     if (!isAdmin(env, message.from.id)) await sendMessage(env, message.chat.id, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
     else await sendMessage(env, message.chat.id, "\u0410\u0434\u043C\u0438\u043D-\u043F\u0430\u043D\u0435\u043B\u044C \u043F\u0440\u043E\u043C\u043E\u043A\u043E\u0434\u043E\u0432:", adminKeyboard());
+    return;
+  }
+  if (isAdmin(env, message.from.id)) {
+    const payoutSession = await takePayoutConfirmSession(env, message.from.id);
+    if (payoutSession) {
+      await confirmPartnerPayout(env, message.chat.id, message.from.id, payoutSession.request_id, text);
+      return;
+    }
+  }
+  if (isAdmin(env, message.from.id) && await takePartnerInputSession(env, message.from.id)) {
+    await createPartnerFromInput(env, message.chat.id, text);
+    return;
+  }
+  if (isAdmin(env, message.from.id)) {
+    const adminSession = await takePartnerAdminSession(env, message.from.id);
+    if (adminSession) {
+      await applyPartnerAdminDays(env, message.chat.id, adminSession, text);
+      return;
+    }
+    const code = await takePartnerAccessSession(env, message.from.id);
+    if (code) {
+      const userId = Number(text);
+      if (!Number.isSafeInteger(userId) || userId <= 0) {
+        await sendMessage(env, message.chat.id, "\u041D\u0443\u0436\u0435\u043D \u0447\u0438\u0441\u043B\u043E\u0432\u043E\u0439 Telegram ID. \u0414\u043E\u0441\u0442\u0443\u043F \u043D\u0435 \u0432\u044B\u0434\u0430\u043D.");
+        return;
+      }
+      const partnerUser = await env.DB.prepare("SELECT telegram_id, username, first_name FROM users WHERE telegram_id = ?").bind(userId).first();
+      if (!partnerUser) {
+        await sendMessage(env, message.chat.id, "\u042D\u0442\u043E\u0442 \u0430\u043A\u043A\u0430\u0443\u043D\u0442 \u0435\u0449\u0451 \u043D\u0435 \u043F\u0438\u0441\u0430\u043B \u0431\u043E\u0442\u0443. \u041F\u0443\u0441\u0442\u044C \u043F\u0430\u0440\u0442\u043D\u0451\u0440 \u0441\u043D\u0430\u0447\u0430\u043B\u0430 \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u0442 /start, \u0437\u0430\u0442\u0435\u043C \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u0435 \u0432\u044B\u0434\u0430\u0447\u0443 \u0434\u043E\u0441\u0442\u0443\u043F\u0430.");
+        return;
+      }
+      await ensurePartnerTables(env);
+      await env.DB.prepare(`INSERT INTO partner_accesses (partner_code, user_id) VALUES (?, ?)
+        ON CONFLICT(partner_code) DO UPDATE SET user_id = excluded.user_id, granted_at = datetime('now')`).bind(code, userId).run();
+      await sendMessage(env, message.chat.id, `\u0414\u043E\u0441\u0442\u0443\u043F \u043A \u043F\u0430\u0440\u0442\u043D\u0451\u0440\u043A\u0435 ${code} \u0432\u044B\u0434\u0430\u043D \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0443 ${partnerUser.username ? `@${partnerUser.username}` : partnerUser.first_name ?? "\u0431\u0435\u0437 \u0438\u043C\u0435\u043D\u0438"} \xB7 ${userId}.`);
+      await sendPartnerDashboard(env, userId, userId);
+      return;
+    }
+  }
+  const payoutCode = await takePartnerPayoutSession(env, message.from.id);
+  if (payoutCode) {
+    const note = text.trim();
+    if (!note || note.length > 1e3 || !isValidPayoutDetails(note)) {
+      await sendMessage(env, message.chat.id, "\u041D\u0443\u0436\u043D\u044B \u0440\u0435\u043A\u0432\u0438\u0437\u0438\u0442\u044B \u0434\u043B\u044F \u0432\u044B\u043F\u043B\u0430\u0442\u044B: \u043D\u043E\u043C\u0435\u0440 \u043A\u0430\u0440\u0442\u044B \u0438\u043B\u0438 \u043D\u043E\u043C\u0435\u0440 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430 \u0438 \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0431\u0430\u043D\u043A\u0430. \u041C\u043E\u0436\u043D\u043E \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0439; \u0434\u043E 1 000 \u0441\u0438\u043C\u0432\u043E\u043B\u043E\u0432. \u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0437\u0430\u043F\u0440\u043E\u0441 \u043D\u0430 \u0432\u044B\u0432\u043E\u0434 \u0437\u0430\u043D\u043E\u0432\u043E.\n\n\u0412\u044B\u0432\u043E\u0434 \u043C\u043E\u0436\u0435\u0442 \u0437\u0430\u043D\u0438\u043C\u0430\u0442\u044C \u0434\u043E 5 \u0440\u0430\u0431\u043E\u0447\u0438\u0445 \u0434\u043D\u0435\u0439, \u0443\u0441\u043A\u043E\u0440\u0438\u0442\u044C \u0435\u0433\u043E \u043D\u0435\u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E. \u041F\u0440\u0438 \u043F\u0440\u043E\u0431\u043B\u0435\u043C\u0430\u0445: @Olivarqy.");
+      return;
+    }
+    await submitPartnerPayout(env, message.chat.id, message.from, payoutCode, note);
     return;
   }
   const session = await takeInputSession(env, message.from.id);
@@ -1973,12 +2984,12 @@ async function handleMessage(env, message) {
       const percentIndex = session.kind === "admin_promo_days" ? 2 : 1;
       const activationIndex = freeDays ? 2 : session.kind === "admin_promo_days" ? 3 : 2;
       const expiryIndex = activationIndex + 1;
-      const expectedParts = [activationIndex + 1, activationIndex + 2];
+      const expectedParts = [activationIndex + 1, activationIndex + 2, activationIndex + 3];
       const percent = freeDays ? 99 : Number(parts[percentIndex]);
       const activations = Number(parts[activationIndex]);
-      const expiry = parsePromoExpiry(parts[expiryIndex]);
+      const expiry = parsePromoExpiry(parts[expiryIndex], parts[expiryIndex + 1]);
       if (!code || !expectedParts.includes(parts.length) || !Number.isInteger(percent) || !freeDays && (percent < 1 || percent > 99) || !Number.isInteger(activations) || activations < 0 || activations > 1e5 || expiry === void 0 || days !== null && (!Number.isInteger(days) || days < 1 || days > 3650)) {
-        await sendMessage(env, message.chat.id, freeDays ? "\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u0444\u043E\u0440\u043C\u0430\u0442. \u041F\u0440\u0438\u043C\u0435\u0440: GIFT7 7 0 31.12.2026" : session.kind === "admin_promo_days" ? "\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u0444\u043E\u0440\u043C\u0430\u0442. \u041F\u0440\u0438\u043C\u0435\u0440: PROMO14 14 25 30 31.12.2026" : "\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u0444\u043E\u0440\u043C\u0430\u0442. \u041F\u0440\u0438\u043C\u0435\u0440: SALE20 20 0 31.12.2026");
+        await sendMessage(env, message.chat.id, freeDays ? "\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u0444\u043E\u0440\u043C\u0430\u0442. \u041F\u0440\u0438\u043C\u0435\u0440: GIFT7 7 0 31.12.2026 12:00" : session.kind === "admin_promo_days" ? "\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u0444\u043E\u0440\u043C\u0430\u0442. \u041F\u0440\u0438\u043C\u0435\u0440: PROMO14 14 25 30 31.12.2026 12:00" : "\u041D\u0435\u0432\u0435\u0440\u043D\u044B\u0439 \u0444\u043E\u0440\u043C\u0430\u0442. \u041F\u0440\u0438\u043C\u0435\u0440: SALE20 20 0 31.12.2026 12:00");
         return;
       }
       const unlimited = activations === 0 ? 1 : 0;
@@ -2010,6 +3021,10 @@ ${escapeHtml(description)}. \u0410\u043A\u0442\u0438\u0432\u0430\u0446\u0438\u04
     } else {
       await sendMessage(env, message.chat.id, "\u041A\u043E\u043C\u0430\u043D\u0434\u0430 \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u0430 \u0442\u043E\u043B\u044C\u043A\u043E \u0430\u0434\u043C\u0438\u043D\u0438\u0441\u0442\u0440\u0430\u0442\u043E\u0440\u0443.");
     }
+    return;
+  }
+  if (isCommand(text, "/partner")) {
+    await sendPartnerDashboard(env, message.chat.id, message.from.id);
     return;
   }
   if (isCommand(text, "/promo")) {
@@ -2049,12 +3064,14 @@ ${escapeHtml(description)}. \u0410\u043A\u0442\u0438\u0432\u0430\u0446\u0438\u04
     "\u041D\u0430\u043F\u0438\u0448\u0438\u0442\u0435 /start \u2014 \u044F \u043F\u0440\u043E\u0432\u0435\u0440\u044E \u043F\u043E\u0434\u043F\u0438\u0441\u043A\u0443 \u043D\u0430 \u043A\u0430\u043D\u0430\u043B \u0438 \u043F\u043E\u043C\u043E\u0433\u0443 \u043E\u0444\u043E\u0440\u043C\u0438\u0442\u044C Premium. \u041E\u0434\u0438\u043D \u0440\u0430\u0437 \u043C\u043E\u0436\u043D\u043E \u043D\u0430\u0447\u0430\u0442\u044C \u0441 \u0431\u0435\u0441\u043F\u043B\u0430\u0442\u043D\u044B\u0445 \u0442\u0440\u0451\u0445 \u0434\u043D\u0435\u0439."
   );
 }
+__name(handleMessage, "handleMessage");
 function rubleKopeks(value) {
   if (!/^\d+(?:\.\d{1,2})?$/.test(value)) return null;
   const [whole, fraction = ""] = value.split(".");
   const result = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
   return Number.isSafeInteger(result) ? result : null;
 }
+__name(rubleKopeks, "rubleKopeks");
 function constantTimeEqual(left, right) {
   let difference = left.length ^ right.length;
   const max = Math.max(left.length, right.length);
@@ -2063,11 +3080,13 @@ function constantTimeEqual(left, right) {
   }
   return difference === 0;
 }
+__name(constantTimeEqual, "constantTimeEqual");
 async function sha1Hex(value) {
   const bytes = new TextEncoder().encode(value);
   const digest = await crypto.subtle.digest("SHA-1", bytes);
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
+__name(sha1Hex, "sha1Hex");
 function signedYoomoneyString(params, secret) {
   return [
     params.get("notification_type") ?? "",
@@ -2081,12 +3100,14 @@ function signedYoomoneyString(params, secret) {
     params.get("label") ?? ""
   ].join("&");
 }
+__name(signedYoomoneyString, "signedYoomoneyString");
 async function fulfilPaidOrder(env, order) {
   const buyer = await getUser(env, order.user_id);
   if (!buyer) throw new Error("order owner does not exist");
   const link = await deliverSubscription(env, buyer.telegram_id, order.plan, `YooMoney ${order.plan.toUpperCase()} ${order.duration_months}m`);
   return { buyer, link };
 }
+__name(fulfilPaidOrder, "fulfilPaidOrder");
 async function finalizePaidOrder(env, order, notification) {
   const { operationId, amount, currency, notificationType, paymentDatetime, sender, codepro, label, rawHash } = notification;
   const existingPayment = await env.DB.prepare("SELECT order_id, operation_id FROM payments WHERE operation_id = ?").bind(operationId).first();
@@ -2119,6 +3140,7 @@ async function finalizePaidOrder(env, order, notification) {
       SELECT ?, ?, 'payment', ? WHERE EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'paid')`).bind(order.user_id, order.id, `${notificationType} operation ${operationId}`, order.id)
   ]);
   if (Number(results[1]?.meta?.changes ?? 0) === 0) return "OK";
+  await recordPartnerReward(env, order.id);
   await fulfilPaidOrder(env, order);
   try {
     const period = order.duration_days ? `${order.duration_days} \u0434\u043D\u0435\u0439` : `${order.duration_months} \u043C\u0435\u0441.`;
@@ -2133,6 +3155,7 @@ async function finalizePaidOrder(env, order, notification) {
   }
   return "OK";
 }
+__name(finalizePaidOrder, "finalizePaidOrder");
 async function processYoomoneyNotification(env, body) {
   if (body.length > 64 * 1024) throw new Error("notification body is too large");
   requireConfig(env, ["YOOMONEY_NOTIFICATION_SECRET"]);
@@ -2174,6 +3197,7 @@ async function processYoomoneyNotification(env, body) {
     rawHash: receivedHash
   });
 }
+__name(processYoomoneyNotification, "processYoomoneyNotification");
 async function processYooKassaNotification(env, body) {
   if (body.length > 64 * 1024) throw new Error("notification body is too large");
   let payload;
@@ -2211,6 +3235,7 @@ async function processYooKassaNotification(env, body) {
     rawHash: ""
   });
 }
+__name(processYooKassaNotification, "processYooKassaNotification");
 async function handleTelegramWebhook(env, request) {
   requireConfig(env, ["TELEGRAM_WEBHOOK_SECRET"]);
   if (request.headers.get("X-Telegram-Bot-Api-Secret-Token") !== env.TELEGRAM_WEBHOOK_SECRET) {
@@ -2232,6 +3257,7 @@ async function handleTelegramWebhook(env, request) {
     return json({ ok: true });
   }
 }
+__name(handleTelegramWebhook, "handleTelegramWebhook");
 async function ensureTelegramWebhook(env) {
   requireConfig(env, ["TELEGRAM_BOT_TOKEN", "TELEGRAM_WEBHOOK_SECRET"]);
   const webhookUrl = "https://telegram-vpn-bot.bobritogusingo.workers.dev/telegram";
@@ -2242,6 +3268,7 @@ async function ensureTelegramWebhook(env) {
     drop_pending_updates: false
   });
 }
+__name(ensureTelegramWebhook, "ensureTelegramWebhook");
 async function disableExpiredSubscriptions(env) {
   const expired = await env.DB.prepare(
     `SELECT user_id, plan, happ_install_id FROM subscriptions
@@ -2259,6 +3286,7 @@ async function disableExpiredSubscriptions(env) {
     }
   }
 }
+__name(disableExpiredSubscriptions, "disableExpiredSubscriptions");
 var index_default = {
   async scheduled(_controller, env, _ctx) {
     try {
@@ -2319,3 +3347,4 @@ export {
 @noble/ciphers/utils.js:
   (*! noble-ciphers - MIT License (c) 2023 Paul Miller (paulmillr.com) *)
 */
+//# sourceMappingURL=index.js.map
