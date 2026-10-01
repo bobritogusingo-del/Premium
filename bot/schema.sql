@@ -212,7 +212,20 @@ INSERT OR IGNORE INTO partner_program_settings (id, recruitment_open) VALUES (1,
 CREATE TABLE IF NOT EXISTS partner_applications (
   user_id INTEGER PRIMARY KEY REFERENCES users(telegram_id),
   status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
+  answers TEXT,
+  revision_requested_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   decided_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_partner_applications_status_time ON partner_applications(status, decided_at DESC, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS partner_application_sessions (
+  user_id INTEGER PRIMARY KEY REFERENCES users(telegram_id),
+  expires_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS partner_application_submissions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(telegram_id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_partner_application_submissions_user_time ON partner_application_submissions(user_id, created_at DESC);

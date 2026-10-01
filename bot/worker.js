@@ -1638,9 +1638,16 @@ ${paidUserQuotes[index]}`
           env.DB.prepare("INSERT OR IGNORE INTO partner_program_settings (id, recruitment_open) VALUES (1, 0)"),
           env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_applications (
           user_id INTEGER PRIMARY KEY REFERENCES users(telegram_id), status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
-          created_at TEXT NOT NULL DEFAULT (datetime('now')), decided_at TEXT
+          answers TEXT, revision_requested_at TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), decided_at TEXT
         )`),
-          env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_partner_applications_status_time ON partner_applications(status, decided_at DESC, created_at DESC)")
+          env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_partner_applications_status_time ON partner_applications(status, decided_at DESC, created_at DESC)"),
+          env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_application_sessions (
+          user_id INTEGER PRIMARY KEY REFERENCES users(telegram_id), expires_at TEXT NOT NULL
+        )`),
+          env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_application_submissions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL REFERENCES users(telegram_id), created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )`),
+          env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_partner_application_submissions_user_time ON partner_application_submissions(user_id, created_at DESC)")
         ]);
         const payoutColumns = await env.DB.prepare("PRAGMA table_info(partner_payout_requests)").all();
         const payoutExisting = new Set(payoutColumns.results.map((column) => column.name));
@@ -1653,6 +1660,11 @@ ${paidUserQuotes[index]}`
         for (const [name, definition] of [["request_id", "INTEGER"], ["mode", "TEXT NOT NULL DEFAULT 'create'"]])
           if (!sessionExisting.has(name))
             await env.DB.prepare(`ALTER TABLE partner_payout_sessions ADD COLUMN ${name} ${definition}`).run();
+        const applicationColumns = await env.DB.prepare("PRAGMA table_info(partner_applications)").all();
+        const applicationExisting = new Set(applicationColumns.results.map((column) => column.name));
+        for (const [name, definition] of [["answers", "TEXT"], ["revision_requested_at", "TEXT"]])
+          if (!applicationExisting.has(name))
+            await env.DB.prepare(`ALTER TABLE partner_applications ADD COLUMN ${name} ${definition}`).run();
         await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_partner_payout_requests_status_time ON partner_payout_requests(status, confirmed_at DESC)").run();
       })().catch((error) => {
         partnerTablesReady = null;
@@ -1743,9 +1755,49 @@ ${paidUserQuotes[index]}`
     const row = await env.DB.prepare("SELECT recruitment_open FROM partner_program_settings WHERE id = 1").first();
     return row?.recruitment_open === 1;
   }
+  var PARTNER_APPLICATION_QUESTIONS = `Ответьте одним сообщением на все вопросы:
+
+1. Как вы будете распространять бота?
+2. Ссылка на аккаунт в соцсетях (если будете пиарить через соцсети).
+3. Как долго планируете сотрудничать?
+
+Заявку можно отправить не чаще двух раз за 7 дней.`;
   async function getPartnerApplication(env, userId) {
     await ensurePartnerTables(env);
-    return env.DB.prepare("SELECT a.user_id, a.status, u.username, u.first_name, a.created_at, a.decided_at FROM partner_applications a JOIN users u ON u.telegram_id = a.user_id WHERE a.user_id = ?").bind(userId).first();
+    return env.DB.prepare("SELECT a.user_id, a.status, u.username, u.first_name, a.answers, a.revision_requested_at, a.created_at, a.decided_at FROM partner_applications a JOIN users u ON u.telegram_id = a.user_id WHERE a.user_id = ?").bind(userId).first();
+  }
+  async function applicationSubmissionsLastWeek(env, userId) {
+    const row = await env.DB.prepare("SELECT COUNT(*) AS count FROM partner_application_submissions WHERE user_id = ? AND created_at > datetime('now', '-7 days')").bind(userId).first();
+    return Number(row?.count ?? 0);
+  }
+  async function setPartnerApplicationSession(env, userId) {
+    await ensurePartnerTables(env);
+    await env.DB.prepare("INSERT INTO partner_application_sessions (user_id, expires_at) VALUES (?, datetime('now', '+30 minutes')) ON CONFLICT(user_id) DO UPDATE SET expires_at = excluded.expires_at").bind(userId).run();
+  }
+  async function takePartnerApplicationSession(env, userId) {
+    await ensurePartnerTables(env);
+    const row = await env.DB.prepare("SELECT 1 FROM partner_application_sessions WHERE user_id = ? AND expires_at > datetime('now')").bind(userId).first();
+    if (row)
+      await env.DB.prepare("DELETE FROM partner_application_sessions WHERE user_id = ?").bind(userId).run();
+    return Boolean(row);
+  }
+  async function startPartnerApplication(env, chatId, userId) {
+    if (!await recruitmentOpen(env)) {
+      await sendMessage(env, chatId, "Набор в партнёрскую программу закрыт.");
+      return;
+    }
+    const app = await getPartnerApplication(env, userId);
+    if (app && !(app.status === "pending" && app.revision_requested_at)) {
+      await sendPartnerEntry(env, chatId, userId);
+      return;
+    }
+    const count = await applicationSubmissionsLastWeek(env, userId);
+    if (count >= 2) {
+      await sendMessage(env, chatId, "Лимит заявок: не более 2 отправок за 7 дней. Попробуйте позже.");
+      return;
+    }
+    await setPartnerApplicationSession(env, userId);
+    await sendMessage(env, chatId, PARTNER_APPLICATION_QUESTIONS);
   }
   async function sendPartnerEntry(env, chatId, userId) {
     if (await getPartnerAccess(env, userId)) {
@@ -1754,6 +1806,10 @@ ${paidUserQuotes[index]}`
     }
     const application = await getPartnerApplication(env, userId);
     if (application) {
+      if (application.status === "pending" && application.revision_requested_at) {
+        await sendMessage(env, chatId, "По вашей заявке запрошена доработка. Отправьте ответы на все вопросы заново.", { inline_keyboard: [[{ text: "\uD83D\uDCDD Отправить анкету заново", callback_data: "partner:application:apply" }]] });
+        return;
+      }
       const text = application.status === "pending" ? "Ваша заявка в партнёрскую программу находится на рассмотрении." : application.status === "approved" ? "Ваша заявка в партнёрскую программу одобрена. Ожидайте, с вами свяжется наш менеджер." : "По вашей заявке в партнёрскую программу получен отказ.";
       await sendMessage(env, chatId, text);
       return;
@@ -1762,25 +1818,53 @@ ${paidUserQuotes[index]}`
       await sendMessage(env, chatId, "Набор в партнёрскую программу сейчас закрыт.");
       return;
     }
-    await sendMessage(env, chatId, "Набор в партнёрскую программу открыт. Вы можете подать заявку — администратор рассмотрит её отдельно.", { inline_keyboard: [[{ text: "\uD83E\uDD1D Подать заявку", callback_data: "partner:application:apply" }]] });
+    await sendMessage(env, chatId, "Набор в партнёрскую программу открыт. Перед подачей нужно ответить на три вопроса.", { inline_keyboard: [[{ text: "\uD83E\uDD1D Подать заявку", callback_data: "partner:application:apply" }]] });
   }
-  async function submitPartnerApplication(env, chatId, user) {
+  async function submitPartnerApplication(env, chatId, user, answers) {
     await ensurePartnerTables(env);
     if (!await recruitmentOpen(env)) {
       await sendMessage(env, chatId, "Набор в партнёрскую программу закрыт.");
       return;
     }
-    const added = await env.DB.prepare("INSERT INTO partner_applications (user_id) SELECT ? WHERE NOT EXISTS (SELECT 1 FROM partner_applications WHERE user_id = ?)").bind(user.id, user.id).run();
-    if (!Number(added.meta.changes ?? 0)) {
+    const clean = answers.trim();
+    if (clean.length < 30 || clean.length > 3000) {
+      await sendMessage(env, chatId, "Ответьте на все три вопроса одним сообщением. Объём анкеты — от 30 до 3 000 символов. Откройте /partner и попробуйте снова.");
+      return;
+    }
+    const old = await getPartnerApplication(env, user.id);
+    if (old && !(old.status === "pending" && old.revision_requested_at)) {
       await sendPartnerEntry(env, chatId, user.id);
       return;
     }
+    const count = await applicationSubmissionsLastWeek(env, user.id);
+    if (count >= 2) {
+      await sendMessage(env, chatId, "Лимит заявок: не более 2 отправок за 7 дней. Попробуйте позже.");
+      return;
+    }
+    if (old)
+      await env.DB.prepare("UPDATE partner_applications SET answers = ?, revision_requested_at = NULL, created_at = datetime('now'), decided_at = NULL, status = 'pending' WHERE user_id = ? AND status = 'pending' AND revision_requested_at IS NOT NULL").bind(clean, user.id).run();
+    else
+      await env.DB.prepare("INSERT INTO partner_applications (user_id, answers) VALUES (?, ?)").bind(user.id, clean).run();
+    await env.DB.prepare("INSERT INTO partner_application_submissions (user_id) VALUES (?)").bind(user.id).run();
     await sendMessage(env, chatId, "Заявка отправлена и находится на рассмотрении.");
     const adminId = Number(env.ADMIN_TELEGRAM_ID);
     if (Number.isSafeInteger(adminId)) {
       const account = user.username ? `@${escapeHtml(user.username)}` : escapeHtml(user.first_name || "Без имени");
-      await telegramApi(env, "sendMessage", { chat_id: adminId, parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "\uD83D\uDCCB Открыть заявку", callback_data: `admin:partnerapp:view:${user.id}:pending` }]] }, text: `\uD83E\uDD1D Новая заявка в партнёрскую программу
+      await telegramApi(env, "sendMessage", { chat_id: adminId, parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "\uD83D\uDCCB Открыть заявку", callback_data: `admin:partnerapp:view:${user.id}:pending` }]] }, text: `\uD83E\uDD1D ${old ? "Доработанная" : "Новая"} заявка в партнёрскую программу
 Пользователь: ${account} · ID <code>${user.id}</code>` });
+    }
+  }
+  async function requestPartnerApplicationRevision(env, chatId, userId) {
+    const changed = await env.DB.prepare("UPDATE partner_applications SET revision_requested_at = datetime('now') WHERE user_id = ? AND status = 'pending' AND revision_requested_at IS NULL").bind(userId).run();
+    if (!Number(changed.meta.changes ?? 0)) {
+      await sendMessage(env, chatId, "Для этой заявки уже запрошена доработка или она обработана.");
+      return;
+    }
+    await sendMessage(env, chatId, "Запрос на доработку отправлен пользователю.");
+    try {
+      await sendMessage(env, userId, `\uD83D\uDCDD По вашей заявке нужна доработка. ${PARTNER_APPLICATION_QUESTIONS}`);
+    } catch (error) {
+      console.error("Could not notify partner applicant about revision", error);
     }
   }
   async function sendPartnerApplicationHub(env, chatId) {
@@ -1807,7 +1891,7 @@ ${paidUserQuotes[index]}`
     }
     const last = Math.max(0, Math.ceil(total / pageSize) - 1);
     const current = Math.min(Math.max(0, page), last);
-    const rows = await env.DB.prepare(`SELECT a.user_id, a.status, u.username, u.first_name, a.created_at, a.decided_at FROM partner_applications a JOIN users u ON u.telegram_id = a.user_id WHERE ${where} ORDER BY COALESCE(a.decided_at, a.created_at) DESC LIMIT ? OFFSET ?`).bind(pageSize, current * pageSize).all();
+    const rows = await env.DB.prepare(`SELECT a.user_id, a.status, u.username, u.first_name, a.answers, a.revision_requested_at, a.created_at, a.decided_at FROM partner_applications a JOIN users u ON u.telegram_id = a.user_id WHERE ${where} ORDER BY COALESCE(a.decided_at, a.created_at) DESC LIMIT ? OFFSET ?`).bind(pageSize, current * pageSize).all();
     const buttons = rows.results.map((app) => [{ text: `${category === "pending" ? "⏳" : category === "approved" ? "✅" : category === "rejected" ? "⛔" : "\uD83D\uDDC3"} ${app.username ? "@" + app.username : app.first_name || app.user_id}`, callback_data: `admin:partnerapp:view:${app.user_id}:${category}` }]);
     const nav = [];
     if (current)
@@ -1827,13 +1911,17 @@ ${paidUserQuotes[index]}`
       return;
     }
     const account = app.username ? `@${escapeHtml(app.username)}` : escapeHtml(app.first_name || "Без имени");
-    const status = app.status === "pending" ? "на рассмотрении" : app.status === "approved" ? "одобрена" : "отказано";
-    const keyboard = app.status === "pending" ? [[{ text: "✅ Одобрить", callback_data: `admin:partnerapp:decision:${app.user_id}:approved` }, { text: "⛔ Отказать", callback_data: `admin:partnerapp:decision:${app.user_id}:rejected` }], [{ text: "‹ К списку", callback_data: `admin:partnerapp:list:${category}:0` }]] : [[{ text: "‹ К списку", callback_data: `admin:partnerapp:list:${category}:0` }]];
+    const status = app.status === "pending" ? app.revision_requested_at ? "нужна доработка" : "на рассмотрении" : app.status === "approved" ? "одобрена" : "отказано";
+    const keyboard = app.status === "pending" ? [[{ text: "✅ Одобрить", callback_data: `admin:partnerapp:decision:${app.user_id}:approved` }, { text: "⛔ Отказать", callback_data: `admin:partnerapp:decision:${app.user_id}:rejected` }], ...app.revision_requested_at ? [] : [[{ text: "↩️ Запросить доработку", callback_data: `admin:partnerapp:revision:${app.user_id}` }]], [{ text: "‹ К списку", callback_data: `admin:partnerapp:list:${category}:0` }]] : [[{ text: "‹ К списку", callback_data: `admin:partnerapp:list:${category}:0` }]];
+    const answers = app.answers ? `<blockquote expandable>${escapeHtml(app.answers)}</blockquote>` : "Не заполнена.";
     await telegramApi(env, "sendMessage", { chat_id: chatId, parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard }, text: `Заявка в партнёрскую программу
 Пользователь: ${account} · ID <code>${app.user_id}</code>
 Статус: ${status}
 Подана: ${formatPromoExpiry(app.created_at)}${app.decided_at ? `
-Решение: ${formatPromoExpiry(app.decided_at)}` : ""}` });
+Решение: ${formatPromoExpiry(app.decided_at)}` : ""}
+
+Ответы:
+${answers}` });
   }
   async function decidePartnerApplication(env, chatId, adminId, userId, status) {
     const updated = await env.DB.prepare("UPDATE partner_applications SET status = ?, decided_at = datetime('now') WHERE user_id = ? AND status = 'pending'").bind(status, userId).run();
@@ -2439,7 +2527,7 @@ ${statusText}
       return;
     }
     if (data === "partner:application:apply") {
-      await submitPartnerApplication(env, chatId, callback.from);
+      await startPartnerApplication(env, chatId, callback.from.id);
       return;
     }
     if (data === "admin:partnerapp:toggle") {
@@ -2485,6 +2573,19 @@ ${statusText}
         return;
       }
       await sendPartnerApplicationInfo(env, chatId, userId, category);
+      return;
+    }
+    if (data.startsWith("admin:partnerapp:revision:")) {
+      if (!isAdmin(env, callback.from.id)) {
+        await sendMessage(env, chatId, "Команда доступна только администратору.");
+        return;
+      }
+      const userId = Number(data.slice("admin:partnerapp:revision:".length));
+      if (!Number.isSafeInteger(userId)) {
+        await sendMessage(env, chatId, "Заявка не найдена.");
+        return;
+      }
+      await requestPartnerApplicationRevision(env, chatId, userId);
       return;
     }
     if (data.startsWith("admin:partnerapp:decision:")) {
@@ -3038,6 +3139,10 @@ ${lines.join(`
         await sendPartnerDashboard(env, userId, userId);
         return;
       }
+    }
+    if (await takePartnerApplicationSession(env, message.from.id)) {
+      await submitPartnerApplication(env, message.chat.id, message.from, text);
+      return;
     }
     const payoutSession = await takePartnerPayoutSession(env, message.from.id);
     if (payoutSession) {
