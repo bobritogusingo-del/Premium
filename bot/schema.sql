@@ -162,8 +162,7 @@ CREATE TABLE IF NOT EXISTS partner_access_sessions (
   expires_at TEXT NOT NULL
 );
 
--- Manual payout requests: a delegated partner may request a payout at most
--- three times per rolling 24-hour period. No transfer is initiated by this table.
+-- A delegated partner has one pending payout request at a time. No transfer is initiated by this table.
 CREATE TABLE IF NOT EXISTS partner_payout_requests (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   partner_code TEXT NOT NULL REFERENCES partners(code),
@@ -173,6 +172,7 @@ CREATE TABLE IF NOT EXISTS partner_payout_requests (
   amount_kopeks INTEGER,
   confirmed_by INTEGER REFERENCES users(telegram_id),
   confirmed_at TEXT,
+  edited_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_partner_payout_requests_user_time ON partner_payout_requests(requester_user_id, created_at DESC);
@@ -185,6 +185,8 @@ CREATE TABLE IF NOT EXISTS partner_payout_confirm_sessions (
 CREATE TABLE IF NOT EXISTS partner_payout_sessions (
   user_id INTEGER PRIMARY KEY REFERENCES users(telegram_id),
   partner_code TEXT NOT NULL REFERENCES partners(code),
+  request_id INTEGER REFERENCES partner_payout_requests(id),
+  mode TEXT NOT NULL DEFAULT 'create',
   expires_at TEXT NOT NULL
 );
 

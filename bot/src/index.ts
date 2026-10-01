@@ -72,7 +72,8 @@ interface PartnerRow { code: string; percent: number; payment_label: string; exp
 interface PartnerAccessRow { partner_code: string; user_id: number; username: string | null; first_name: string | null; granted_at: string; }
 interface PartnerOrderAttribution { code: string; percent: number; payment_label: string; expires_at: string | null; referral_purchase_expires_at: string; }
 interface PartnerAdminSession { action: "extend_partner" | "extend_referral"; partner_code: string; }
-interface PartnerPayoutRequestRow { id: number; partner_code: string; requester_user_id: number; username: string | null; first_name: string | null; message: string | null; status: "pending" | "paid"; amount_kopeks: number | null; confirmed_at: string | null; created_at: string; }
+interface PartnerPayoutRequestRow { id: number; partner_code: string; requester_user_id: number; username: string | null; first_name: string | null; message: string | null; status: "pending" | "paid"; amount_kopeks: number | null; confirmed_at: string | null; edited_at: string | null; created_at: string; }
+interface PartnerPayoutSession { partner_code: string; request_id: number | null; mode: "create" | "edit"; }
 interface PartnerPayoutConfirmSession { request_id: number; }
 interface HappInstall { id: number; code: string; link: string; }
 interface SubscriptionProvider {
@@ -906,7 +907,7 @@ async function ensurePartnerTables(env: Env): Promise<void> {
         env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_partner_payout_requests_user_time ON partner_payout_requests(requester_user_id, created_at DESC)"),
         env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_payout_sessions (
           user_id INTEGER PRIMARY KEY REFERENCES users(telegram_id), partner_code TEXT NOT NULL REFERENCES partners(code),
-          expires_at TEXT NOT NULL
+          request_id INTEGER REFERENCES partner_payout_requests(id), mode TEXT NOT NULL DEFAULT 'create', expires_at TEXT NOT NULL
         )`),
         env.DB.prepare(`CREATE TABLE IF NOT EXISTS partner_payout_confirm_sessions (
           admin_id INTEGER PRIMARY KEY REFERENCES users(telegram_id), request_id INTEGER NOT NULL REFERENCES partner_payout_requests(id),
@@ -919,8 +920,11 @@ async function ensurePartnerTables(env: Env): Promise<void> {
       ]);
       const payoutColumns = await env.DB.prepare("PRAGMA table_info(partner_payout_requests)").all<{ name: string }>();
       const payoutExisting = new Set(payoutColumns.results.map((column) => column.name));
-      const payoutAdditions: Array<[string, string]> = [["status", "TEXT NOT NULL DEFAULT 'pending'"], ["amount_kopeks", "INTEGER"], ["confirmed_by", "INTEGER"], ["confirmed_at", "TEXT"]];
+      const payoutAdditions: Array<[string, string]> = [["status", "TEXT NOT NULL DEFAULT 'pending'"], ["amount_kopeks", "INTEGER"], ["confirmed_by", "INTEGER"], ["confirmed_at", "TEXT"], ["edited_at", "TEXT"]];
       for (const [name, definition] of payoutAdditions) if (!payoutExisting.has(name)) await env.DB.prepare(`ALTER TABLE partner_payout_requests ADD COLUMN ${name} ${definition}`).run();
+      const sessionColumns = await env.DB.prepare("PRAGMA table_info(partner_payout_sessions)").all<{ name: string }>();
+      const sessionExisting = new Set(sessionColumns.results.map((column) => column.name));
+      for (const [name, definition] of [["request_id", "INTEGER"], ["mode", "TEXT NOT NULL DEFAULT 'create'"]] as Array<[string, string]>) if (!sessionExisting.has(name)) await env.DB.prepare(`ALTER TABLE partner_payout_sessions ADD COLUMN ${name} ${definition}`).run();
       await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_partner_payout_requests_status_time ON partner_payout_requests(status, confirmed_at DESC)").run();
     })().catch((error) => { partnerTablesReady = null; throw error; });
   }
@@ -994,21 +998,20 @@ async function getPartnerAccess(env: Env, userId: number): Promise<PartnerAccess
   return env.DB.prepare(`SELECT a.partner_code, a.user_id, u.username, u.first_name, a.granted_at
     FROM partner_accesses a JOIN users u ON u.telegram_id = a.user_id WHERE a.user_id = ?`).bind(userId).first<PartnerAccessRow>();
 }
-async function payoutRequestCountLastDay(env: Env, userId: number): Promise<number> {
+async function setPartnerPayoutSession(env: Env, userId: number, code: string, mode: "create" | "edit" = "create", requestId: number | null = null): Promise<void> {
   await ensurePartnerTables(env);
-  const row = await env.DB.prepare("SELECT COUNT(*) AS count FROM partner_payout_requests WHERE requester_user_id = ? AND created_at > datetime('now', '-1 day')").bind(userId).first<{ count: number }>();
-  return Number(row?.count ?? 0);
+  await env.DB.prepare(`INSERT INTO partner_payout_sessions (user_id, partner_code, request_id, mode, expires_at) VALUES (?, ?, ?, ?, datetime('now', '+10 minutes'))
+    ON CONFLICT(user_id) DO UPDATE SET partner_code = excluded.partner_code, request_id = excluded.request_id, mode = excluded.mode, expires_at = excluded.expires_at`).bind(userId, code, requestId, mode).run();
 }
-async function setPartnerPayoutSession(env: Env, userId: number, code: string): Promise<void> {
+async function takePartnerPayoutSession(env: Env, userId: number): Promise<PartnerPayoutSession | null> {
   await ensurePartnerTables(env);
-  await env.DB.prepare(`INSERT INTO partner_payout_sessions (user_id, partner_code, expires_at) VALUES (?, ?, datetime('now', '+10 minutes'))
-    ON CONFLICT(user_id) DO UPDATE SET partner_code = excluded.partner_code, expires_at = excluded.expires_at`).bind(userId, code).run();
-}
-async function takePartnerPayoutSession(env: Env, userId: number): Promise<string | null> {
-  await ensurePartnerTables(env);
-  const session = await env.DB.prepare("SELECT partner_code FROM partner_payout_sessions WHERE user_id = ? AND expires_at > datetime('now')").bind(userId).first<{ partner_code: string }>();
+  const session = await env.DB.prepare("SELECT partner_code, request_id, mode FROM partner_payout_sessions WHERE user_id = ? AND expires_at > datetime('now')").bind(userId).first<PartnerPayoutSession>();
   if (session) await env.DB.prepare("DELETE FROM partner_payout_sessions WHERE user_id = ?").bind(userId).run();
-  return session?.partner_code ?? null;
+  return session ?? null;
+}
+async function currentPartnerPayout(env: Env, userId: number, code: string): Promise<PartnerPayoutRequestRow | null> {
+  await ensurePartnerTables(env);
+  return env.DB.prepare("SELECT id, partner_code, requester_user_id, message, status, amount_kopeks, confirmed_at, edited_at, created_at FROM partner_payout_requests WHERE requester_user_id = ? AND partner_code = ? AND (status = 'pending' OR (status = 'paid' AND confirmed_at > datetime('now', '-3 days'))) ORDER BY CASE status WHEN 'pending' THEN 0 ELSE 1 END, COALESCE(confirmed_at, created_at) DESC LIMIT 1").bind(userId, code).first<PartnerPayoutRequestRow>();
 }
 async function claimPartnerAttribution(env: Env, userId: number, code: string): Promise<void> {
   await ensurePartnerTables(env);
@@ -1196,13 +1199,30 @@ async function sendPartnerDashboard(env: Env, chatId: number, userId: number): P
   if (!access) { await sendMessage(env, chatId, "Доступ к партнёрской статистике не выдан."); return; }
   const partner = await env.DB.prepare("SELECT code, percent, payment_label, expires_at, referral_purchase_expires_at, active, created_at, updated_at FROM partners WHERE code = ?").bind(access.partner_code).first<PartnerRow>();
   if (!partner) { await sendMessage(env, chatId, "Партнёрка не найдена."); return; }
-  const stats = await env.DB.prepare(`SELECT COUNT(*) AS purchases, COALESCE(SUM(amount_rub), 0) AS turnover, COALESCE(SUM(reward_kopeks), 0) AS reward FROM partner_rewards WHERE partner_code = ?`).bind(partner.code).first<{ purchases: number; turnover: number; reward: number }>();
+  const stats = await env.DB.prepare(`SELECT COUNT(*) AS purchases, COALESCE(SUM(amount_rub), 0) AS turnover FROM partner_rewards WHERE partner_code = ?`).bind(partner.code).first<{ purchases: number; turnover: number }>();
   const available = await partnerAvailableBalance(env, partner.code);
   const active = partner.active === 1 && (!partner.expires_at || partner.expires_at > new Date().toISOString().slice(0, 19).replace("T", " "));
   const link = `https://t.me/BananchikiVpnBot?start=partner_${partner.code}`;
-  await telegramApi(env, "sendMessage", { chat_id: chatId, parse_mode: "HTML", reply_markup: { inline_keyboard: [
-    [{ text: "💸 Запросить вывод средств", callback_data: `partner:payout:start:${partner.code}` }],
-  ] }, text: `Ваша партнёрка: <code>${escapeHtml(partner.code)}</code>\nСтатус: ${active ? "активна" : "завершена или отключена"}\nПроцент: ${partner.percent}%\nДействует до: ${formatPartnerExpiry(partner.expires_at)}\nПокупки рефералов учитываются до: ${formatPartnerExpiry(partner.referral_purchase_expires_at)}\n\nВаша ссылка:\n<code>${link}</code>\n\nУспешных покупок: ${Number(stats?.purchases ?? 0)}\nОборот: ${Number(stats?.turnover ?? 0)} ₽\nК выплате: ${formatKopeks(available)}\n\nОтключить партнёрку может только администратор.` });
+  const payout = await currentPartnerPayout(env, userId, partner.code);
+  const statusText = !payout ? "Заявка на вывод: нет" : payout.status === "pending" ? `Заявка на вывод: ожидает (#${payout.id})` : `Заявка на вывод: выведено (${formatKopeks(payout.amount_kopeks ?? 0)}). Она исчезнет из этого раздела через 3 дня.`;
+  const keyboard: Array<Array<{ text: string; callback_data: string }>> = [];
+  if (!payout) keyboard.push([{ text: "💸 Запросить вывод средств", callback_data: `partner:payout:start:${partner.code}` }]);
+  else if (payout.status === "pending" && !payout.edited_at) keyboard.push([{ text: "✏️ Изменить заявку", callback_data: `partner:payout:edit:${payout.id}` }]);
+  await telegramApi(env, "sendMessage", { chat_id: chatId, parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard }, text: `Ваша партнёрка: <code>${escapeHtml(partner.code)}</code>
+Статус: ${active ? "активна" : "завершена или отключена"}
+Процент: ${partner.percent}%
+Действует до: ${formatPartnerExpiry(partner.expires_at)}
+Покупки рефералов учитываются до: ${formatPartnerExpiry(partner.referral_purchase_expires_at)}
+${statusText}
+
+Ваша ссылка:
+<code>${link}</code>
+
+Успешных покупок: ${Number(stats?.purchases ?? 0)}
+Оборот: ${Number(stats?.turnover ?? 0)} ₽
+К выплате: ${formatKopeks(available)}
+
+Отключить партнёрку может только администратор.` });
 }
 function isValidPayoutDetails(value: string): boolean {
   const digits = (value.match(/\d/g) ?? []).length;
@@ -1215,39 +1235,47 @@ function isValidPayoutDetails(value: string): boolean {
 async function showPartnerPayoutOptions(env: Env, chatId: number, userId: number, code: string): Promise<void> {
   const access = await getPartnerAccess(env, userId);
   if (!access || access.partner_code !== code) { await sendMessage(env, chatId, "Доступ к этой партнёрке не выдан."); return; }
-  const used = await payoutRequestCountLastDay(env, userId);
-  if (used >= 3) { await sendMessage(env, chatId, "Лимит запросов на вывод: 3 за 24 часа. Попробуйте позже."); return; }
+  if (await currentPartnerPayout(env, userId, code)) { await sendMessage(env, chatId, "У вас уже есть ожидающая или недавно выведенная заявка. Откройте /partner."); return; }
   await setPartnerPayoutSession(env, userId, code);
-  await sendMessage(env, chatId, `Запросов за последние 24 часа: ${used}/3.
-
-Для выплаты обязательно отправьте одним сообщением номер карты или номер телефона и название банка. При желании добавьте комментарий.
+  await sendMessage(env, chatId, `Для выплаты обязательно отправьте одним сообщением номер карты или номер телефона и название банка. При желании добавьте комментарий.
 
 Вывод может занимать до 5 рабочих дней, но обычно происходит быстрее. Ускорить вывод средств невозможно.
 
 Возникли проблемы — обращайтесь к администратору @Olivarqy.`);
 }
-
-async function submitPartnerPayout(env: Env, chatId: number, user: TelegramUser, code: string, note: string | null): Promise<void> {
-  const access = await getPartnerAccess(env, user.id);
-  if (!access || access.partner_code !== code) { await sendMessage(env, chatId, "Доступ к этой партнёрке не выдан."); return; }
-  const partner = await env.DB.prepare("SELECT code, percent, payment_label, expires_at, active, created_at, updated_at FROM partners WHERE code = ?").bind(code).first<PartnerRow>();
-  if (!partner) { await sendMessage(env, chatId, "Партнёрка не найдена."); return; }
-  const inserted = await env.DB.prepare(`INSERT INTO partner_payout_requests (partner_code, requester_user_id, message)
-    SELECT ?, ?, ? WHERE (SELECT COUNT(*) FROM partner_payout_requests WHERE requester_user_id = ? AND created_at > datetime('now', '-1 day')) < 3
-    RETURNING id`).bind(code, user.id, note, user.id).first<{ id: number }>();
-  if (!inserted?.id) { await sendMessage(env, chatId, "Лимит запросов на вывод: 3 за 24 часа. Попробуйте позже."); return; }
-  const stats = await env.DB.prepare(`SELECT COUNT(*) AS purchases, COALESCE(SUM(amount_rub), 0) AS turnover, COALESCE(SUM(reward_kopeks), 0) AS reward FROM partner_rewards WHERE partner_code = ?`).bind(code).first<{ purchases: number; turnover: number; reward: number }>();
-  const available = await partnerAvailableBalance(env, code);
-  const adminId = env.ADMIN_TELEGRAM_ID ? Number(env.ADMIN_TELEGRAM_ID) : NaN;
-  if (!Number.isSafeInteger(adminId)) { await sendMessage(env, chatId, "Не удалось отправить запрос. Попробуйте позже."); return; }
-  const account = user.username ? `@${escapeHtml(user.username)}` : escapeHtml(user.first_name || "Без имени");
-  const noteText = note ? `\nРеквизиты и сообщение партнёра:
-<blockquote expandable>${escapeHtml(note)}</blockquote>` : "\nРеквизиты и сообщение партнёра: не добавлены.";
-  await telegramApi(env, "sendMessage", { chat_id: adminId, parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "✅ Подтвердить вывод", callback_data: `admin:payout:confirm:${inserted.id}` }], [{ text: "📋 Открыть в ожидающих", callback_data: `admin:payout:view:${inserted.id}:pending` }]] }, text: `💸 <b>Запрос вывода средств #${inserted.id}</b>\n\nПартнёрка: <code>${escapeHtml(partner.code)}</code>\nПартнёр: ${account} · ID: <code>${user.id}</code>\nПроцент: ${partner.percent}%\nСрок: ${formatPartnerExpiry(partner.expires_at)}\nПометка платежа: ${escapeHtml(partner.payment_label)}\n\nУспешных покупок: ${Number(stats?.purchases ?? 0)}\nОборот: ${Number(stats?.turnover ?? 0)} ₽\nДоступно к выплате: ${formatKopeks(available)}${noteText}` });
-  const used = await payoutRequestCountLastDay(env, user.id);
-  await sendMessage(env, chatId, `Запрос на вывод отправлен администратору. Осталось запросов на ближайшие 24 часа: ${Math.max(0, 3 - used)}.`);
+async function startPartnerPayoutEdit(env: Env, chatId: number, userId: number, id: number): Promise<void> {
+  const request = await env.DB.prepare("SELECT id, partner_code FROM partner_payout_requests WHERE id = ? AND requester_user_id = ? AND status = 'pending' AND edited_at IS NULL").bind(id, userId).first<{ id: number; partner_code: string }>();
+  if (!request) { await sendMessage(env, chatId, "Эту заявку уже нельзя изменить. Откройте /partner, чтобы увидеть актуальный статус."); return; }
+  await setPartnerPayoutSession(env, userId, request.partner_code, "edit", request.id);
+  await sendMessage(env, chatId, "Отправьте новые реквизиты: номер карты или телефона и название банка. Можно добавить комментарий. Изменить заявку можно только один раз.");
 }
+async function submitPartnerPayout(env: Env, chatId: number, user: TelegramUser, session: PartnerPayoutSession, note: string): Promise<void> {
+  const access = await getPartnerAccess(env, user.id);
+  if (!access || access.partner_code !== session.partner_code) { await sendMessage(env, chatId, "Доступ к этой партнёрке не выдан."); return; }
+  let requestId: number;
+  if (session.mode === "edit") {
+    const changed = await env.DB.prepare("UPDATE partner_payout_requests SET message = ?, edited_at = datetime('now') WHERE id = ? AND requester_user_id = ? AND partner_code = ? AND status = 'pending' AND edited_at IS NULL").bind(note, session.request_id, user.id, session.partner_code).run();
+    if (!Number(changed.meta.changes ?? 0)) { await sendMessage(env, chatId, "Заявку уже нельзя изменить. Откройте /partner, чтобы увидеть актуальный статус."); return; }
+    requestId = Number(session.request_id);
+  } else {
+    const inserted = await env.DB.prepare(`INSERT INTO partner_payout_requests (partner_code, requester_user_id, message)
+      SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM partner_payout_requests WHERE requester_user_id = ? AND status = 'pending')
+      RETURNING id`).bind(session.partner_code, user.id, note, user.id).first<{ id: number }>();
+    if (!inserted?.id) { await sendMessage(env, chatId, "У вас уже есть ожидающая заявка. Откройте /partner."); return; }
+    requestId = inserted.id;
+  }
+  const adminId = env.ADMIN_TELEGRAM_ID ? Number(env.ADMIN_TELEGRAM_ID) : NaN;
+  if (Number.isSafeInteger(adminId)) {
+    const account = user.username ? `@${escapeHtml(user.username)}` : escapeHtml(user.first_name || "Без имени");
+    await telegramApi(env, "sendMessage", { chat_id: adminId, parse_mode: "HTML", reply_markup: { inline_keyboard: [[{ text: "✅ Подтвердить вывод", callback_data: `admin:payout:confirm:${requestId}` }], [{ text: "📋 Открыть в ожидающих", callback_data: `admin:payout:view:${requestId}:pending` }]] }, text: `${session.mode === "edit" ? "✏️ <b>Заявка на вывод изменена</b>" : "💸 <b>Запрос вывода средств</b>"} #${requestId}
 
+Партнёрка: <code>${escapeHtml(session.partner_code)}</code>
+Партнёр: ${account} · ID: <code>${user.id}</code>
+Реквизиты и сообщение:
+<blockquote expandable>${escapeHtml(note)}</blockquote>` });
+  }
+  await sendMessage(env, chatId, session.mode === "edit" ? "Заявка изменена и снова отправлена администратору." : "Запрос на вывод отправлен администратору.");
+}
 async function createPartnerFromInput(env: Env, chatId: number, text: string): Promise<void> {
   const parts = text.trim().split(/\s+/);
   const code = normalizePartnerCode(parts.shift() ?? ""); const percent = Number(parts.shift());
@@ -1552,6 +1580,11 @@ async function handleCallback(env: Env, callback: TelegramCallbackQuery): Promis
     if (!code) { await sendMessage(env, chatId, "Партнёрка не найдена."); return; }
     await showPartnerPayoutOptions(env, chatId, callback.from.id, code); return;
   }
+  if (data.startsWith("partner:payout:edit:")) {
+    const id = Number(data.slice("partner:payout:edit:".length));
+    if (!Number.isSafeInteger(id) || id < 1) { await sendMessage(env, chatId, "Заявка не найдена."); return; }
+    await startPartnerPayoutEdit(env, chatId, callback.from.id, id); return;
+  }
   if (data.startsWith("partner:payout:skip:")) {
     await sendMessage(env, chatId, "Реквизиты для выплаты теперь обязательны. Нажмите «Запросить вывод средств» и укажите номер карты или телефона вместе с банком."); return;
   }
@@ -1844,13 +1877,13 @@ async function handleMessage(env: Env, message: TelegramMessage): Promise<void> 
     }
   }
 
-  const payoutCode = await takePartnerPayoutSession(env, message.from.id);
-  if (payoutCode) {
+  const payoutSession = await takePartnerPayoutSession(env, message.from.id);
+  if (payoutSession) {
     const note = text.trim();
     if (!note || note.length > 1000 || !isValidPayoutDetails(note)) {
-      await sendMessage(env, message.chat.id, "Нужны реквизиты для выплаты: номер карты или номер телефона и название банка. Можно добавить комментарий; до 1 000 символов. Откройте запрос на вывод заново.\n\nВывод может занимать до 5 рабочих дней, ускорить его невозможно. При проблемах: @Olivarqy."); return;
+      await sendMessage(env, message.chat.id, "Нужны реквизиты для выплаты: номер карты или номер телефона и название банка. Можно добавить комментарий; до 1 000 символов. Откройте /partner и начните заново.\n\nВывод может занимать до 5 рабочих дней, ускорить его невозможно. При проблемах: @Olivarqy."); return;
     }
-    await submitPartnerPayout(env, message.chat.id, message.from, payoutCode, note);
+    await submitPartnerPayout(env, message.chat.id, message.from, payoutSession, note);
     return;
   }
 
